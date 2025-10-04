@@ -36,10 +36,10 @@ function startGame(){
   for(let i=0;i<spots;i++){ hideSpots.push({ x: random(80, width-80), y: random(60, height-60) }); }
   // spawn cats and dogs spread across the arena
   for(let i=0;i<nCats;i++){
-    cats.push({ x: random(60, width/2-30), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0 });
+    cats.push({ x: random(60, width/2-30), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:32 });
   }
   for(let j=0;j<nDogs;j++){
-    dogs.push({ x: random(width/2+30, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0 });
+    dogs.push({ x: random(width/2+30, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:38 });
   }
   running = true; gameOver = false; document.getElementById('message').textContent='Boa sorte!';
 }
@@ -130,8 +130,33 @@ function updateEntities(){
       }
     }
   }
+  // separation: avoid overlapping sprites (only for visible, alive entities)
+  const all = [...cats, ...dogs];
+  for(let i=0;i<all.length;i++){
+    for(let j=i+1;j<all.length;j++){
+      const a = all[i], b = all[j];
+      if(!a || !b) continue;
+      if(a.hp <= 0 || b.hp <= 0) continue;
+      if(a.hidden || b.hidden) continue; // allow hidden to stay in place
+      const dx = b.x - a.x, dy = b.y - a.y;
+      let d = sqrt(dx*dx + dy*dy);
+      const minDist = (a.radius || 32) + (b.radius || 32) - 6; // small overlap allowance
+      if(d === 0){ // jitter to avoid perfect overlap
+        const jitter = 0.5 + random(0.1,1);
+        a.x -= jitter; a.y -= jitter; b.x += jitter; b.y += jitter; d = jitter*2;
+      }
+      if(d < minDist){
+        const overlap = (minDist - d);
+        const nx = dx / d, ny = dy / d;
+        const shiftX = nx * (overlap * 0.5);
+        const shiftY = ny * (overlap * 0.5);
+        a.x -= shiftX; a.y -= shiftY;
+        b.x += shiftX; b.y += shiftY;
+      }
+    }
+  }
   // clamp positions
-  for(const e of [...cats,...dogs]){ e.x = constrain(e.x, 20, width-20); e.y = constrain(e.y, 20, height-20); }
+  for(const e of all){ e.x = constrain(e.x, 20, width-20); e.y = constrain(e.y, 20, height-20); }
 }
 
 function performAbility(user, target, pool){
