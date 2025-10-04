@@ -55,9 +55,9 @@ function draw(){ background(255);
   // draw hide spots
   for(const s of hideSpots){ push(); noStroke(); fill(200,180,140,180); ellipse(s.x,s.y,38,28); pop(); }
   // draw cats
-  for(const c of cats){ push(); translate(c.x,c.y); image(catImg,0,0,64,64); if(c.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,72,72); } pop(); }
+  for(const c of cats){ push(); translate(c.x,c.y); drawCatSprite(0,0,64,c); if(c.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,72,72); } pop(); drawHpBar(c.x, c.y - 44, 48, c.hp, c.maxHp); }
   // draw dogs
-  for(const d of dogs){ push(); translate(d.x,d.y); image(dogImg,0,0,76,76); if(d.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,80,80); } pop(); }
+  for(const d of dogs){ push(); translate(d.x,d.y); drawDogSprite(0,0,76,d); if(d.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,80,80); } pop(); drawHpBar(d.x, d.y - 52, 56, d.hp, d.maxHp); }
   // HUD
   // HUD bars
   drawHud();
@@ -226,3 +226,42 @@ function showGameOverOverlay(loser){ const container = document.getElementById('
 function drawGameOver(){ }
 
 function spawnSpark(x,y){ for(let i=0;i<12;i++){ const s = document.createElement('div'); s.style.position='absolute'; s.style.left=(x + random(-8,8))+'px'; s.style.top=(y + random(-8,8))+'px'; s.style.width='6px'; s.style.height='6px'; s.style.background='#ffd24a'; s.style.borderRadius='50%'; s.style.opacity='0.9'; document.getElementById('canvas-container').appendChild(s); setTimeout(()=>{ s.remove(); },260); } }
+
+// draw an HP bar centered at (x,y)
+function drawHpBar(x,y,widthPx, hp, maxHp){ push(); translate(x - widthPx/2, y); stroke(0,0,0,140); strokeWeight(1); noFill(); rect(0,0,widthPx,8,3); const pct = constrain(hp / maxHp, 0, 1); noStroke(); fill(200,50,50); rect(1,1, (widthPx-2) * pct, 6,2); fill(255); textSize(10); textAlign(CENTER,CENTER); fill(255); text( floor(hp) + '/' + floor(maxHp), widthPx/2, 4); pop(); }
+
+function drawCatSprite(x,y,size,ent){ // simple stylized cat face & body
+  push(); translate(x,y);
+  // body
+  noStroke(); fill('#f2c9b6'); ellipse(0,6, size*0.9, size*0.7);
+  // head
+  fill('#f7d8c4'); ellipse(0,-6, size*0.6, size*0.6);
+  // ears
+  fill('#f7d8c4'); triangle(-size*0.22,-size*0.3, -size*0.08,-size*0.9, 0,-size*0.28);
+  triangle(size*0.22,-size*0.3, size*0.08,-size*0.9, 0,-size*0.28);
+  // eyes
+  fill('#222'); ellipse(-size*0.12,-6, size*0.08, size*0.12); ellipse(size*0.12,-6, size*0.08, size*0.12);
+  // nose
+  fill('#d88'); triangle(0,-2, -4,0, 4,0);
+  // tail
+  stroke('#f2c9b6'); strokeWeight(6); noFill(); arc(-size*0.45, 8, size*0.5, size*0.2, -PI/2, PI/4);
+  // minor indicator when buffed
+  if(ent && ent.dmgMult > 1){ noStroke(); fill('#ffd24a'); ellipse( size*0.28, -size*0.4, 8,8); }
+  pop(); }
+
+function drawDogSprite(x,y,size,ent){ // simple stylized dog face & body
+  push(); translate(x,y);
+  // body
+  noStroke(); fill('#d8c8b2'); ellipse(0,8, size*0.95, size*0.75);
+  // head
+  fill('#e6d6c0'); ellipse(0,-6, size*0.7, size*0.66);
+  // ears floppy
+  fill('#caa788'); ellipse(-size*0.28,-4, size*0.2, size*0.35); ellipse(size*0.28,-4, size*0.2, size*0.35);
+  // eyes
+  fill('#222'); ellipse(-size*0.12,-6, size*0.08, size*0.12); ellipse(size*0.12,-6, size*0.08, size*0.12);
+  // snout
+  fill('#cfa'); rect(-6,-1,12,6,4);
+  // tail
+  stroke('#d8c8b2'); strokeWeight(6); noFill(); line(size*0.45, 2, size*0.7, -8);
+  if(ent && ent.dmgMult > 1){ noStroke(); fill('#ffd24a'); ellipse( size*0.34, -size*0.5, 8,8); }
+  pop(); }
