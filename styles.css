@@ -1,0 +1,11 @@
+:root{--bg:#f0f0f8;--card:#fff;--accent:#ffd24a}
+*{box-sizing:border-box;font-family:Inter, Arial, sans-serif}
+body{margin:0;display:flex;flex-direction:column;align-items:center;background:var(--bg);height:100vh}
+#ui{width:760px;max-width:96%;margin:12px}
+#hud{display:flex;gap:12px;align-items:center}
+#catHealth,#dogHealth{background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #e0e0e0}
+#message{flex:1;text-align:center;font-weight:700}
+#canvas-container{width:760px;height:420px;background:linear-gradient(#bfe7ff,#fff);border-radius:10px;overflow:hidden;position:relative}
+button{padding:8px 12px;border-radius:8px;border:none;background:var(--card);cursor:pointer}
+#gameOver{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.6);color:white;font-size:30px}
+#insult{color:#ffde59;font-size:22px;margin-top:10px}
