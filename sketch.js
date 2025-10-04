@@ -1,10 +1,10 @@
 // simple p5 game: Cat vs Dog
 let catImg, dogImg;
-let cat = { x:120,y:200,hp:100,dir:0 };
-let dog = { x:600,y:200,hp:100,dir:PI };
 let running = false;
 let gameOver = false;
 let lastAttack = 0;
+let cat = { x:120,y:200,hp:100,dir:0 };
+let dog = { x:600,y:200,hp:100,dir:0 };
 
 function preload(){ catImg = loadImage('assets/cat.svg'); dogImg = loadImage('assets/dog.svg'); }
 function setup(){ const c = createCanvas(760,420); c.parent('canvas-container'); imageMode(CENTER); textFont('Arial');
