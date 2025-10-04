@@ -105,12 +105,28 @@ function updateEntities(){
     if(c.buffUntil && now > c.buffUntil){ c.dmgMult = 1; c.buffUntil = 0; }
     // if hidden and hide time over, unhide
     if(c.hidden && now > c.hideUntil){ c.hidden = false; }
+    // if hidden, progressively regenerate HP while not found
+    if(c.hidden){
+      if(!c.nextRegen) c.nextRegen = now + 300;
+      if(!c.lastRegen) c.lastRegen = now;
+      if(!c.regenPerSec) c.regenPerSec = random(6,12);
+      if(now >= c.nextRegen){
+        const dt = now - c.lastRegen;
+        const gained = (c.regenPerSec) * (dt/1000);
+        c.hp = Math.min(c.maxHp, c.hp + gained);
+        c.lastRegen = now;
+        c.nextRegen = now + 300;
+      }
+    }
     // if low hp, flee to hide
     const fleeThreshold = 0.28 * c.maxHp;
   if(!c.hidden && c.hp > 0 && c.hp <= fleeThreshold){ c.state='flee'; c.targetHide = safestHide(c.x,c.y, dogs); c.fleeSpeed = random(3,4); }
     // if fleeing, move toward hide
-  if(c.state === 'flee' && c.targetHide){ const ang = atan2(c.targetHide.y - c.y, c.targetHide.x - c.x); const baseSpeed = 1.4; const ms = baseSpeed * (c.fleeSpeed || 3.5); c.x += cos(ang)*ms; c.y += sin(ang)*ms; if(dist(c.x,c.y,c.targetHide.x,c.targetHide.y) < 22){ c.hidden = true; c.hideUntil = now + random(2000,6000); c.state = 'hidden'; // regain small HP while hidden
-        c.hp = Math.min(c.maxHp, c.hp + floor(random(6,14))); }
+    if(c.state === 'flee' && c.targetHide){ const ang = atan2(c.targetHide.y - c.y, c.targetHide.x - c.x); const baseSpeed = 1.4; const ms = baseSpeed * (c.fleeSpeed || 3.5); c.x += cos(ang)*ms; c.y += sin(ang)*ms; if(dist(c.x,c.y,c.targetHide.x,c.targetHide.y) < 22){
+        c.hidden = true; c.hideUntil = now + random(2000,6000); c.state = 'hidden';
+        // setup progressive regen
+        c.hideStart = now; c.nextRegen = now + 300; c.lastRegen = now; c.regenPerSec = random(6,12);
+      }
     }
     // if not fleeing/hidden, find nearest enemy to engage
     if(!c.hidden && c.hp>0 && c.state !== 'flee'){
@@ -135,9 +151,21 @@ function updateEntities(){
   for(const d of dogs){ if(d.hp<=0) continue;
     if(d.buffUntil && now > d.buffUntil){ d.dmgMult = 1; d.buffUntil = 0; }
     if(d.hidden && now > d.hideUntil){ d.hidden = false; }
+    if(d.hidden){
+      if(!d.nextRegen) d.nextRegen = now + 300;
+      if(!d.lastRegen) d.lastRegen = now;
+      if(!d.regenPerSec) d.regenPerSec = random(6,12);
+      if(now >= d.nextRegen){
+        const dt = now - d.lastRegen;
+        const gained = (d.regenPerSec) * (dt/1000);
+        d.hp = Math.min(d.maxHp, d.hp + gained);
+        d.lastRegen = now;
+        d.nextRegen = now + 300;
+      }
+    }
     const fleeThreshold = 0.28 * d.maxHp;
   if(!d.hidden && d.hp > 0 && d.hp <= fleeThreshold){ d.state='flee'; d.targetHide = safestHide(d.x,d.y, cats); d.fleeSpeed = random(3,4); }
-  if(d.state === 'flee' && d.targetHide){ const ang = atan2(d.targetHide.y - d.y, d.targetHide.x - d.x); const baseSpeedD = 1.5; const md = baseSpeedD * (d.fleeSpeed || 3.5); d.x += cos(ang)*md; d.y += sin(ang)*md; if(dist(d.x,d.y,d.targetHide.x,d.targetHide.y) < 22){ d.hidden = true; d.hideUntil = now + random(2000,6000); d.state='hidden'; d.hp = Math.min(d.maxHp, d.hp + floor(random(6,14))); }
+  if(d.state === 'flee' && d.targetHide){ const ang = atan2(d.targetHide.y - d.y, d.targetHide.x - d.x); const baseSpeedD = 1.5; const md = baseSpeedD * (d.fleeSpeed || 3.5); d.x += cos(ang)*md; d.y += sin(ang)*md; if(dist(d.x,d.y,d.targetHide.x,d.targetHide.y) < 22){ d.hidden = true; d.hideUntil = now + random(2000,6000); d.state='hidden'; d.hideStart = now; d.nextRegen = now + 300; d.lastRegen = now; d.regenPerSec = random(6,12); }
     }
     if(!d.hidden && d.hp>0 && d.state !== 'flee'){
       const enemies = cats.filter(c=>c.hp>0 && !c.hidden);
