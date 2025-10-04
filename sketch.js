@@ -24,22 +24,75 @@ function preload(){ catImg = loadImage('assets/cat.svg'); dogImg = loadImage('as
 function setup(){ const c = createCanvas(760,420); c.parent('canvas-container'); imageMode(CENTER); textFont('Arial');
   document.getElementById('startBtn').addEventListener('click', ()=>{ if(!running){ startGame(); } });
   document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
+  // simulation UI wiring
+  const simBtn = document.getElementById('simulateBtn');
+  if(simBtn){ simBtn.addEventListener('click', ()=>{
+    const runs = Math.max(1, parseInt(document.getElementById('simRuns').value||50));
+    document.getElementById('simResults').textContent = 'Rodando simulações...';
+    // run sims asynchronously to avoid blocking UI for large runs
+    setTimeout(()=>{ runSimulations(runs); }, 50);
+  }); }
+}
+
+// Headless simulation runner: runs N matches (no rendering) and reports stats
+function runSimulations(runs){ const results = { cats:0, dogs:0, draws:0, totalTurns:0 };
+  const origWidth = width, origHeight = height;
+  for(let i=0;i<runs;i++){
+    // quick randomized small variation: use current # inputs for starting counts
+    const nCats = Math.max(1, parseInt(document.getElementById('numCats').value||1));
+    const nDogs = Math.max(1, parseInt(document.getElementById('numDogs').value||1));
+    // seed a match
+    initMatchStateForSim(nCats, nDogs);
+    let turns = 0; const MAX_TURNS = 12000; // ~12000 frames ~= long match cap
+    while(!isMatchOver() && turns++ < MAX_TURNS){ updateEntitiesSim(); }
+    const ac = cats.filter(x=>x.hp>0).length; const ad = dogs.filter(x=>x.hp>0).length;
+    if(ac > 0 && ad === 0) results.cats++; else if(ad > 0 && ac === 0) results.dogs++; else results.draws++;
+    results.totalTurns += turns;
+  }
+  const out = `Simulações: ${runs} | Gatos: ${results.cats} | Cachorros: ${results.dogs} | Empates: ${results.draws} | Turnos médios: ${Math.round(results.totalTurns / runs)}`;
+  document.getElementById('simResults').textContent = out;
+  // restore any visual state
+  startGame();
+}
+
+// initialize arrays for simulation (no DOM, no rendering). Reuse same entity structures.
+function initMatchStateForSim(nCats,nDogs){ cats = []; dogs = []; hideSpots = []; const spots = 4 + floor(random(0,3)); for(let i=0;i<spots;i++){ hideSpots.push({ x: random(80, width-80), y: random(60, height-60) }); }
+  for(let i=0;i<nCats;i++){ cats.push({ x: random(60, width/2-30), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:32, moveSpeed: 1.5, attackCooldown: 600, speciesDamageMultiplier: 0.78, hiddenRegenBonus: 1.25, walkRegenPerSec: 0 }); }
+  for(let j=0;j<nDogs;j++){ dogs.push({ x: random(width/2+30, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:38, moveSpeed: 1.45, attackCooldown: 700, speciesDamageMultiplier: 1.45, hiddenRegenBonus: 1.0, walkRegenPerSec: random(2.5,4.0) }); }
+}
+
+function isMatchOver(){ const aliveCats = cats.filter(x=>x.hp>0).length; const aliveDogs = dogs.filter(x=>x.hp>0).length; return (aliveCats === 0 || aliveDogs === 0); }
+
+// fast, simplified update loop for simulation: reuse update logic but avoid heavy drawing/particle ops
+function updateEntitiesSim(){ // reuse updateEntities() internals but avoid creating particles or DOM reads
+  // for simplicity call updateEntities which is already mostly logic; it will run quickly without drawing
+  updateEntities();
 }
 
 function startGame(){
   // read config
-  const nCats = Math.max(1, parseInt(document.getElementById('numCats').value||1));
-  const nDogs = Math.max(1, parseInt(document.getElementById('numDogs').value||1));
+  let nCats = Math.max(1, parseInt(document.getElementById('numCats').value||1));
+  let nDogs = Math.max(1, parseInt(document.getElementById('numDogs').value||1));
+  // enforce global cap
+  const MAX_ENTITIES = 1000;
+  nCats = Math.min(nCats, MAX_ENTITIES);
+  nDogs = Math.min(nDogs, MAX_ENTITIES);
   cats = []; dogs = []; hideSpots = [];
   // create hide spots (4-6)
   const spots = 4 + floor(random(0,3));
   for(let i=0;i<spots;i++){ hideSpots.push({ x: random(80, width-80), y: random(60, height-60) }); }
   // spawn cats and dogs spread across the arena
   for(let i=0;i<nCats;i++){
-    cats.push({ x: random(60, width/2-30), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:32 });
+    cats.push({ x: random(60, width/2-30), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:32,
+      // cat traits (tweaked): still quick but slightly nerfed in damage and hidden regen
+      moveSpeed: 1.5, attackCooldown: 600, speciesDamageMultiplier: 0.78, hiddenRegenBonus: 1.25, walkRegenPerSec: 0
+    });
   }
   for(let j=0;j<nDogs;j++){
-    dogs.push({ x: random(width/2+30, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:38 });
+    dogs.push({ x: random(width/2+30, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:38,
+      // dog traits (tweaked): stronger and a bit faster, better walk regen and slightly quicker attacks
+      moveSpeed: 1.45, attackCooldown: 700, speciesDamageMultiplier: 1.45, hiddenRegenBonus: 1.0, walkRegenPerSec: random(2.5,4.0)
+    });
   }
   running = true; gameOver = false; document.getElementById('message').textContent='Boa sorte!';
 }
@@ -61,6 +114,11 @@ function draw(){ background(255);
   // HUD
   // HUD bars
   drawHud();
+  // remove dead entities from arrays (so they disappear)
+  const beforeCats = cats.length; cats = cats.filter(c=> c.hp > 0);
+  const beforeDogs = dogs.length; dogs = dogs.filter(d=> d.hp > 0);
+  // on-canvas counters
+  push(); noStroke(); fill(0,0,0,200); rect(8,8,160,44,6); fill(255); textAlign(LEFT,TOP); textSize(14); text('Gatos: ' + cats.length, 14, 12); text('Cachorros: ' + dogs.length, 14, 28); pop();
   // particles/effects
   drawParticles();
   if(gameOver){ drawGameOver(); }
@@ -105,11 +163,11 @@ function updateEntities(){
     if(c.buffUntil && now > c.buffUntil){ c.dmgMult = 1; c.buffUntil = 0; }
     // if hidden and hide time over, unhide
     if(c.hidden && now > c.hideUntil){ c.hidden = false; }
-    // if hidden, progressively regenerate HP while not found
+    // if hidden, progressively regenerate HP while not found (cats get bonus)
     if(c.hidden){
       if(!c.nextRegen) c.nextRegen = now + 300;
       if(!c.lastRegen) c.lastRegen = now;
-      if(!c.regenPerSec) c.regenPerSec = random(6,12);
+      if(!c.regenPerSec) c.regenPerSec = random(6,10) * (c.hiddenRegenBonus || 1.0);
       if(now >= c.nextRegen){
         const dt = now - c.lastRegen;
         const gained = (c.regenPerSec) * (dt/1000);
@@ -122,10 +180,10 @@ function updateEntities(){
     const fleeThreshold = 0.28 * c.maxHp;
   if(!c.hidden && c.hp > 0 && c.hp <= fleeThreshold){ c.state='flee'; c.targetHide = safestHide(c.x,c.y, dogs); c.fleeSpeed = random(3,4); }
     // if fleeing, move toward hide
-    if(c.state === 'flee' && c.targetHide){ const ang = atan2(c.targetHide.y - c.y, c.targetHide.x - c.x); const baseSpeed = 1.4; const ms = baseSpeed * (c.fleeSpeed || 3.5); c.x += cos(ang)*ms; c.y += sin(ang)*ms; if(dist(c.x,c.y,c.targetHide.x,c.targetHide.y) < 22){
+    if(c.state === 'flee' && c.targetHide){ const ang = atan2(c.targetHide.y - c.y, c.targetHide.x - c.x); const ms = (c.moveSpeed || 1.4) * (c.fleeSpeed || 3.5); c.x += cos(ang)*ms; c.y += sin(ang)*ms; if(dist(c.x,c.y,c.targetHide.x,c.targetHide.y) < 22){
         c.hidden = true; c.hideUntil = now + random(2000,6000); c.state = 'hidden';
-        // setup progressive regen
-        c.hideStart = now; c.nextRegen = now + 300; c.lastRegen = now; c.regenPerSec = random(6,12);
+        // setup progressive regen (cats get bonus via hiddenRegenBonus)
+        c.hideStart = now; c.nextRegen = now + 300; c.lastRegen = now; c.regenPerSec = random(6,10) * (c.hiddenRegenBonus || 1.0);
       }
     }
     // if not fleeing/hidden, find nearest enemy to engage
@@ -135,7 +193,7 @@ function updateEntities(){
         let target = enemies[0]; let bd = dist(c.x,c.y,target.x,target.y);
         for(const e of enemies){ const dd = dist(c.x,c.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
         const ang = atan2(target.y - c.y, target.x - c.x); c.x += cos(ang)*1.4; c.y += sin(ang)*1.4;
-        if(bd < 70 && now - c.lastAttack > 700){ c.lastAttack = now; performAbility(c,target,catAbilities); }
+  if(bd < 70 && now - c.lastAttack > (c.attackCooldown || 700)){ c.lastAttack = now; performAbility(c,target,catAbilities); }
       } else {
         // if opponents are hidden, move toward a hide spot where opponents might be
         const hiddenSpots = hideSpots.filter(s=> dogs.some(d=> d.hidden && dist(d.x,d.y,s.x,s.y)<30));
@@ -154,7 +212,7 @@ function updateEntities(){
     if(d.hidden){
       if(!d.nextRegen) d.nextRegen = now + 300;
       if(!d.lastRegen) d.lastRegen = now;
-      if(!d.regenPerSec) d.regenPerSec = random(6,12);
+      if(!d.regenPerSec) d.regenPerSec = random(5,9) * (d.hiddenRegenBonus || 1.0);
       if(now >= d.nextRegen){
         const dt = now - d.lastRegen;
         const gained = (d.regenPerSec) * (dt/1000);
@@ -163,14 +221,18 @@ function updateEntities(){
         d.nextRegen = now + 300;
       }
     }
-    const fleeThreshold = 0.28 * d.maxHp;
-  if(!d.hidden && d.hp > 0 && d.hp <= fleeThreshold){ d.state='flee'; d.targetHide = safestHide(d.x,d.y, cats); d.fleeSpeed = random(3,4); }
-  if(d.state === 'flee' && d.targetHide){ const ang = atan2(d.targetHide.y - d.y, d.targetHide.x - d.x); const baseSpeedD = 1.5; const md = baseSpeedD * (d.fleeSpeed || 3.5); d.x += cos(ang)*md; d.y += sin(ang)*md; if(dist(d.x,d.y,d.targetHide.x,d.targetHide.y) < 22){ d.hidden = true; d.hideUntil = now + random(2000,6000); d.state='hidden'; d.hideStart = now; d.nextRegen = now + 300; d.lastRegen = now; d.regenPerSec = random(6,12); }
+      const fleeThreshold = 0.28 * d.maxHp;
+      if(!d.hidden && d.hp > 0 && d.hp <= fleeThreshold){ d.state='flee'; d.targetHide = safestHide(d.x,d.y, cats); d.fleeSpeed = random(3,4); }
+    // dog regenerates a small amount while walking (if walkRegenPerSec set)
+    if(!d.hidden && (d.walkRegenPerSec || 0) > 0){
+      if(!d.walkLastRegen) d.walkLastRegen = now;
+      const dtw = now - d.walkLastRegen;
+      if(dtw > 250){ const gained = (d.walkRegenPerSec) * (dtw/1000); d.hp = Math.min(d.maxHp, d.hp + gained); d.walkLastRegen = now; }
     }
     if(!d.hidden && d.hp>0 && d.state !== 'flee'){
       const enemies = cats.filter(c=>c.hp>0 && !c.hidden);
       if(enemies.length){ let target = enemies[0]; let bd = dist(d.x,d.y,target.x,target.y); for(const e of enemies){ const dd = dist(d.x,d.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
-        const ang = atan2(target.y - d.y, target.x - d.x); d.x += cos(ang)*1.5; d.y += sin(ang)*1.5; if(bd < 70 && now - d.lastAttack > 800){ d.lastAttack = now; performAbility(d,target,dogAbilities); }
+  const ang = atan2(target.y - d.y, target.x - d.x); d.x += cos(ang)*1.5 * (d.moveSpeed || 1.5); d.y += sin(ang)*1.5 * (d.moveSpeed || 1.5); if(bd < 70 && now - d.lastAttack > (d.attackCooldown || 800)){ d.lastAttack = now; performAbility(d,target,dogAbilities); }
       } else {
         const hiddenSpots = hideSpots.filter(s=> cats.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y)<30));
         if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = atan2(s.y - d.y, s.x - d.x); d.x += cos(ang)*1.6; d.y += sin(ang)*1.6; if(dist(d.x,d.y,s.x,s.y)<26){ for(const c of cats){ if(c.hidden && dist(c.x,c.y,s.x,s.y)<40){ c.hidden=false; c.hp = Math.max(0,c.hp - floor(random(4,10))); spawnFloatingText(c.x,c.y-20,'!','rgba(255,0,0,0.9)'); } } } }
