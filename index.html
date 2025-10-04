@@ -13,6 +13,17 @@
       <div id="dogHealth">Cachorro: 100</div>
       <div id="message"></div>
     </div>
+    <div id="abilities">
+      <label>Habilidade:</label>
+      <select id="abilitySelect">
+        <option value="auto">Aleatória</option>
+        <option value="Scratch">Scratch</option>
+        <option value="Purr Heal">Purr Heal</option>
+        <option value="Feline Fury">Feline Fury</option>
+        <option value="Nine Lives">Nine Lives</option>
+      </select>
+      <button id="attackBtn">Atacar</button>
+    </div>
     <div id="controls">
       <button id="startBtn">Iniciar</button>
       <button id="restartBtn">Reiniciar</button>
@@ -23,6 +34,7 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
+  <script src="audio.js"></script>
   <script src="sketch.js"></script>
 </body>
 </html>

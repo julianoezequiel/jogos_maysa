@@ -24,6 +24,20 @@ function preload(){ catImg = loadImage('assets/cat.svg'); dogImg = loadImage('as
 function setup(){ const c = createCanvas(760,420); c.parent('canvas-container'); imageMode(CENTER); textFont('Arial');
   document.getElementById('startBtn').addEventListener('click', ()=>{ if(!running){ startGame(); } });
   document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
+  // attack button wiring
+  const atk = document.getElementById('attackBtn'); if(atk){ atk.addEventListener('click', ()=>{ if(!running) return; if(millis() - lastAttack < 500) return; lastAttack = millis(); const sel = document.getElementById('abilitySelect').value; if(sel === 'auto'){ performAbility(cat, dog, catAbilities); } else { // find ability by name
+      const ability = catAbilities.find(a=>a.name === sel);
+      if(ability){ executeNamedAbility(cat, dog, ability); }
+    } }); }
+  // simple touch controls: support tap zones for mobile (left/right/top/bottom to move, tap attack)
+  const container = document.getElementById('canvas-container');
+  if(container){ container.addEventListener('touchstart', (e)=>{ e.preventDefault(); const t = e.touches[0]; const rect = container.getBoundingClientRect(); const x = t.clientX - rect.left; const y = t.clientY - rect.top; // subdivide into zones
+      if(y > rect.height*0.75){ // bottom area: attack
+        const sel = document.getElementById('abilitySelect').value;
+        if(millis() - lastAttack > 400){ lastAttack = millis(); if(sel === 'auto') performAbility(cat,dog,catAbilities); else { const ability = catAbilities.find(a=>a.name===sel); if(ability) executeNamedAbility(cat,dog,ability); } }
+      } else { // directional move
+        if(x < rect.width*0.33) cat.x -= 24; else if(x > rect.width*0.66) cat.x += 24; else cat.y -= 24;
+      } }); }
 }
 
 function startGame(){ running = true; gameOver = false; cat.hp = 100; dog.hp = 100; document.getElementById('message').textContent='Boa sorte!'; }
@@ -74,12 +88,14 @@ function performAbility(user, target, pool){
   // pick ability by probability
   const r = random(); let acc = 0; let chosen = pool[0];
   for(const a of pool){ acc += a.prob; if(r <= acc){ chosen = a; break; } }
+  // play impact sound for damage, heal or buff sounds
   if(chosen.type === 'damage'){
     const base = floor(random(chosen.min, chosen.max));
     const dmg = floor(base * (user.dmgMult || 1));
     target.hp = Math.max(0, target.hp - dmg);
     spawnFloatingText(target.x, target.y - 30, '-' + dmg, '#ff6666');
     spawnConfetti(target.x, target.y, 8);
+    if(window.catDogAudio) window.catDogAudio.playImpact();
     // knockback
     const ang = atan2(target.y - user.y, target.x - user.x);
     target.x += cos(ang) * 12; target.y += sin(ang) * 12;
@@ -87,14 +103,47 @@ function performAbility(user, target, pool){
     const val = floor(random(chosen.min, chosen.max));
     user.hp = Math.min(user.maxHp, user.hp + val);
     spawnFloatingText(user.x, user.y - 30, '+' + val, '#66ff88');
+    if(window.catDogAudio) window.catDogAudio.playHeal();
   } else if(chosen.type === 'buffDamage'){
     user.dmgMult = 1 + chosen.amount;
     user.buffUntil = millis() + chosen.duration;
     spawnFloatingText(user.x, user.y - 30, 'Dmg up', '#ffd24a');
+    if(window.catDogAudio) window.catDogAudio.playBuff();
   } else if(chosen.type === 'buffMaxHp'){
     user.maxHp += chosen.amount;
     user.hp += chosen.amount; // immediate benefit
     spawnFloatingText(user.x, user.y - 30, 'Max HP +' + chosen.amount, '#ffd24a');
+    if(window.catDogAudio) window.catDogAudio.playBuff();
+  }
+}
+
+// execute a named ability directly (bypass probability selection)
+function executeNamedAbility(user, target, ability){
+  const chosen = ability;
+  if(chosen.type === 'damage'){
+    const base = floor(random(chosen.min, chosen.max));
+    const dmg = floor(base * (user.dmgMult || 1));
+    target.hp = Math.max(0, target.hp - dmg);
+    spawnFloatingText(target.x, target.y - 30, '-' + dmg, '#ff6666');
+    spawnConfetti(target.x, target.y, 8);
+    if(window.catDogAudio) window.catDogAudio.playImpact();
+    const ang = atan2(target.y - user.y, target.x - user.x);
+    target.x += cos(ang) * 12; target.y += sin(ang) * 12;
+  } else if(chosen.type === 'heal'){
+    const val = floor(random(chosen.min, chosen.max));
+    user.hp = Math.min(user.maxHp, user.hp + val);
+    spawnFloatingText(user.x, user.y - 30, '+' + val, '#66ff88');
+    if(window.catDogAudio) window.catDogAudio.playHeal();
+  } else if(chosen.type === 'buffDamage'){
+    user.dmgMult = 1 + chosen.amount;
+    user.buffUntil = millis() + chosen.duration;
+    spawnFloatingText(user.x, user.y - 30, 'Dmg up', '#ffd24a');
+    if(window.catDogAudio) window.catDogAudio.playBuff();
+  } else if(chosen.type === 'buffMaxHp'){
+    user.maxHp += chosen.amount;
+    user.hp += chosen.amount;
+    spawnFloatingText(user.x, user.y - 30, 'Max HP +' + chosen.amount, '#ffd24a');
+    if(window.catDogAudio) window.catDogAudio.playBuff();
   }
 }
 
