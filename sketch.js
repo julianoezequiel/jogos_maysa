@@ -2,10 +2,10 @@
 let catImg, dogImg;
 let running = false;
 let gameOver = false;
-let lastAttack = 0;
-let cat = { x:120,y:200,hp:100,maxHp:100,dir:0, dmgMult:1, buffUntil:0 };
-let dog = { x:600,y:200,hp:100,maxHp:100,dir:0, dmgMult:1, buffUntil:0 };
 let particles = [];
+let cats = [];
+let dogs = [];
+let hideSpots = [];
 
 const catAbilities = [
   {name:'Scratch', type:'damage', min:8, max:14, prob:0.6},
@@ -24,39 +24,40 @@ function preload(){ catImg = loadImage('assets/cat.svg'); dogImg = loadImage('as
 function setup(){ const c = createCanvas(760,420); c.parent('canvas-container'); imageMode(CENTER); textFont('Arial');
   document.getElementById('startBtn').addEventListener('click', ()=>{ if(!running){ startGame(); } });
   document.getElementById('restartBtn').addEventListener('click', ()=>{ location.reload(); });
-  // attack button wiring
-  const atk = document.getElementById('attackBtn'); if(atk){ atk.addEventListener('click', ()=>{ if(!running) return; if(millis() - lastAttack < 500) return; lastAttack = millis(); const sel = document.getElementById('abilitySelect').value; if(sel === 'auto'){ performAbility(cat, dog, catAbilities); } else { // find ability by name
-      const ability = catAbilities.find(a=>a.name === sel);
-      if(ability){ executeNamedAbility(cat, dog, ability); }
-    } }); }
-  // simple touch controls: support tap zones for mobile (left/right/top/bottom to move, tap attack)
-  const container = document.getElementById('canvas-container');
-  if(container){ container.addEventListener('touchstart', (e)=>{ e.preventDefault(); const t = e.touches[0]; const rect = container.getBoundingClientRect(); const x = t.clientX - rect.left; const y = t.clientY - rect.top; // subdivide into zones
-      if(y > rect.height*0.75){ // bottom area: attack
-        const sel = document.getElementById('abilitySelect').value;
-        if(millis() - lastAttack > 400){ lastAttack = millis(); if(sel === 'auto') performAbility(cat,dog,catAbilities); else { const ability = catAbilities.find(a=>a.name===sel); if(ability) executeNamedAbility(cat,dog,ability); } }
-      } else { // directional move
-        if(x < rect.width*0.33) cat.x -= 24; else if(x > rect.width*0.66) cat.x += 24; else cat.y -= 24;
-      } }); }
 }
 
-function startGame(){ running = true; gameOver = false; cat.hp = 100; dog.hp = 100; document.getElementById('message').textContent='Boa sorte!'; }
+function startGame(){
+  // read config
+  const nCats = Math.max(1, parseInt(document.getElementById('numCats').value||1));
+  const nDogs = Math.max(1, parseInt(document.getElementById('numDogs').value||1));
+  cats = []; dogs = []; hideSpots = [];
+  // create hide spots (4-6)
+  const spots = 4 + floor(random(0,3));
+  for(let i=0;i<spots;i++){ hideSpots.push({ x: random(80, width-80), y: random(60, height-60) }); }
+  // spawn cats and dogs spread across the arena
+  for(let i=0;i<nCats;i++){
+    cats.push({ x: random(60, width/2-30), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0 });
+  }
+  for(let j=0;j<nDogs;j++){
+    dogs.push({ x: random(width/2+30, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0 });
+  }
+  running = true; gameOver = false; document.getElementById('message').textContent='Boa sorte!';
+}
 
 function draw(){ background(255);
   // arena
   fill(240); rect(0,0,width,height);
   // update
   if(running && !gameOver){
-    handleInput();
-    updateAI();
-    // expire buffs
-    if(cat.buffUntil && millis() > cat.buffUntil){ cat.dmgMult = 1; cat.buffUntil = 0; }
-    if(dog.buffUntil && millis() > dog.buffUntil){ dog.dmgMult = 1; dog.buffUntil = 0; }
-    checkCollisions();
+    updateEntities();
+    checkMatchEnd();
   }
-  // draw characters
-  push(); translate(cat.x,cat.y); image(catImg,0,0,80,80); pop();
-  push(); translate(dog.x,dog.y); image(dogImg,0,0,92,92); pop();
+  // draw hide spots
+  for(const s of hideSpots){ push(); noStroke(); fill(200,180,140,180); ellipse(s.x,s.y,38,28); pop(); }
+  // draw cats
+  for(const c of cats){ push(); translate(c.x,c.y); image(catImg,0,0,64,64); if(c.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,72,72); } pop(); }
+  // draw dogs
+  for(const d of dogs){ push(); translate(d.x,d.y); image(dogImg,0,0,76,76); if(d.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,80,80); } pop(); }
   // HUD
   // HUD bars
   drawHud();
@@ -67,21 +68,70 @@ function draw(){ background(255);
 
 function drawHud(){
   const ch = document.getElementById('catHealth'); const dh = document.getElementById('dogHealth');
-  if(ch){ ch.textContent = 'Gato: ' + cat.hp + ' / ' + cat.maxHp + (cat.dmgMult>1? ' (Dmg x' + cat.dmgMult.toFixed(2) + ')':''); }
-  if(dh){ dh.textContent = 'Cachorro: ' + dog.hp + ' / ' + dog.maxHp + (dog.dmgMult>1? ' (Dmg x' + dog.dmgMult.toFixed(2) + ')':''); }
+  const aliveCats = cats.filter(x=>x.hp>0).length; const aliveDogs = dogs.filter(x=>x.hp>0).length;
+  const totalCatHp = cats.reduce((s,e)=>s + Math.max(0,e.hp),0);
+  const totalDogHp = dogs.reduce((s,e)=>s + Math.max(0,e.hp),0);
+  if(ch){ ch.textContent = 'Gatos: ' + aliveCats + ' | HP: ' + totalCatHp; }
+  if(dh){ dh.textContent = 'Cachorros: ' + aliveDogs + ' | HP: ' + totalDogHp; }
 }
 
-function handleInput(){ if(keyIsDown(LEFT_ARROW)) cat.x -= 3; if(keyIsDown(RIGHT_ARROW)) cat.x += 3; if(keyIsDown(UP_ARROW)) cat.y -= 3; if(keyIsDown(DOWN_ARROW)) cat.y += 3; if(keyIsDown(32)){ // space attack
-    if(millis() - lastAttack > 500){ lastAttack = millis();
-      // if close to dog, perform an ability
-      if(dist(cat.x,cat.y,dog.x,dog.y) < 100){ performAbility(cat, dog, catAbilities); }
+// new autonomous multi-entity AI
+function updateEntities(){
+  const now = millis();
+  // helpers
+  function nearestHide(x,y){ let best=null; let bd=1e9; for(const s of hideSpots){ const d = dist(x,y,s.x,s.y); if(d<bd){ bd=d; best=s; } } return best; }
+  // process cats
+  for(const c of cats){ if(c.hp<=0) continue;
+    // expire buffs
+    if(c.buffUntil && now > c.buffUntil){ c.dmgMult = 1; c.buffUntil = 0; }
+    // if hidden and hide time over, unhide
+    if(c.hidden && now > c.hideUntil){ c.hidden = false; }
+    // if low hp, flee to hide
+    const fleeThreshold = 0.28 * c.maxHp;
+    if(!c.hidden && c.hp > 0 && c.hp <= fleeThreshold){ c.state='flee'; c.targetHide = nearestHide(c.x,c.y); }
+    // if fleeing, move toward hide
+    if(c.state === 'flee' && c.targetHide){ const ang = atan2(c.targetHide.y - c.y, c.targetHide.x - c.x); c.x += cos(ang)*2.6; c.y += sin(ang)*2.6; if(dist(c.x,c.y,c.targetHide.x,c.targetHide.y) < 22){ c.hidden = true; c.hideUntil = now + random(2000,6000); c.state = 'hidden'; // regain small HP while hidden
+        c.hp = Math.min(c.maxHp, c.hp + floor(random(6,14))); }
     }
-  }}
-
-function updateAI(){ // dog tries to approach cat and attack
-  const ang = atan2(cat.y - dog.y, cat.x - dog.x);
-  dog.x += cos(ang) * 1.6; dog.y += sin(ang) * 1.6;
-  if(dist(cat.x,cat.y,dog.x,dog.y) < 100 && millis() - lastAttack > 700){ lastAttack = millis(); performAbility(dog, cat, dogAbilities); }
+    // if not fleeing/hidden, find nearest enemy to engage
+    if(!c.hidden && c.hp>0 && c.state !== 'flee'){
+      const enemies = dogs.filter(d=>d.hp>0 && !d.hidden);
+      if(enemies.length){ // pick nearest
+        let target = enemies[0]; let bd = dist(c.x,c.y,target.x,target.y);
+        for(const e of enemies){ const dd = dist(c.x,c.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
+        const ang = atan2(target.y - c.y, target.x - c.x); c.x += cos(ang)*1.4; c.y += sin(ang)*1.4;
+        if(bd < 70 && now - c.lastAttack > 700){ c.lastAttack = now; performAbility(c,target,catAbilities); }
+      } else {
+        // if opponents are hidden, move toward a hide spot where opponents might be
+        const hiddenSpots = hideSpots.filter(s=> dogs.some(d=> d.hidden && dist(d.x,d.y,s.x,s.y)<30));
+        if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = atan2(s.y - c.y, s.x - c.x); c.x += cos(ang)*1.7; c.y += sin(ang)*1.7; if(dist(c.x,c.y,s.x,s.y)<26){ // flush
+            // reveal hidden dogs at spot and attack
+            for(const d of dogs){ if(d.hidden && dist(d.x,d.y,s.x,s.y)<40){ d.hidden=false; d.hp = Math.max(0,d.hp- floor(random(4,10))); spawnFloatingText(d.x,d.y-20,'!','rgba(255,0,0,0.9)'); }
+            }
+        } }
+      }
+    }
+  }
+  // process dogs (mirror logic)
+  for(const d of dogs){ if(d.hp<=0) continue;
+    if(d.buffUntil && now > d.buffUntil){ d.dmgMult = 1; d.buffUntil = 0; }
+    if(d.hidden && now > d.hideUntil){ d.hidden = false; }
+    const fleeThreshold = 0.28 * d.maxHp;
+    if(!d.hidden && d.hp > 0 && d.hp <= fleeThreshold){ d.state='flee'; d.targetHide = nearestHide(d.x,d.y); }
+    if(d.state === 'flee' && d.targetHide){ const ang = atan2(d.targetHide.y - d.y, d.targetHide.x - d.x); d.x += cos(ang)*2.4; d.y += sin(ang)*2.4; if(dist(d.x,d.y,d.targetHide.x,d.targetHide.y) < 22){ d.hidden = true; d.hideUntil = now + random(2000,6000); d.state='hidden'; d.hp = Math.min(d.maxHp, d.hp + floor(random(6,14))); }
+    }
+    if(!d.hidden && d.hp>0 && d.state !== 'flee'){
+      const enemies = cats.filter(c=>c.hp>0 && !c.hidden);
+      if(enemies.length){ let target = enemies[0]; let bd = dist(d.x,d.y,target.x,target.y); for(const e of enemies){ const dd = dist(d.x,d.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
+        const ang = atan2(target.y - d.y, target.x - d.x); d.x += cos(ang)*1.5; d.y += sin(ang)*1.5; if(bd < 70 && now - d.lastAttack > 800){ d.lastAttack = now; performAbility(d,target,dogAbilities); }
+      } else {
+        const hiddenSpots = hideSpots.filter(s=> cats.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y)<30));
+        if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = atan2(s.y - d.y, s.x - d.x); d.x += cos(ang)*1.6; d.y += sin(ang)*1.6; if(dist(d.x,d.y,s.x,s.y)<26){ for(const c of cats){ if(c.hidden && dist(c.x,c.y,s.x,s.y)<40){ c.hidden=false; c.hp = Math.max(0,c.hp - floor(random(4,10))); spawnFloatingText(c.x,c.y-20,'!','rgba(255,0,0,0.9)'); } } } }
+      }
+    }
+  }
+  // clamp positions
+  for(const e of [...cats,...dogs]){ e.x = constrain(e.x, 20, width-20); e.y = constrain(e.y, 20, height-20); }
 }
 
 function performAbility(user, target, pool){
@@ -99,6 +149,8 @@ function performAbility(user, target, pool){
     // knockback
     const ang = atan2(target.y - user.y, target.x - user.x);
     target.x += cos(ang) * 12; target.y += sin(ang) * 12;
+    // if target was hidden (rare), reveal
+    if(target.hidden){ target.hidden = false; }
   } else if(chosen.type === 'heal'){
     const val = floor(random(chosen.min, chosen.max));
     user.hp = Math.min(user.maxHp, user.hp + val);
@@ -154,7 +206,17 @@ function spawnConfetti(x,y,count=12){ for(let i=0;i<count;i++){ particles.push({
 function drawParticles(){ for(let i=particles.length-1;i>=0;i--){ const p = particles[i]; p.x += p.vx||0; p.y += p.vy|| -0.5; p.life -= 1; if(p.life <= 0) particles.splice(i,1); }
   for(const p of particles){ push(); textAlign(CENTER,CENTER); if(p.tx){ fill(p.color||'#fff'); textSize(16); text(p.tx,p.x,p.y); } else if(p.type === 'confetti'){ noStroke(); fill(p.col); rect(p.x,p.y,4,6); } pop(); } }
 
-function checkCollisions(){ if(cat.hp <= 0 || dog.hp <= 0){ running = false; gameOver = true; const loser = cat.hp <= 0 ? 'Gato' : 'Cachorro'; const winner = cat.hp <= 0 ? 'Cachorro' : 'Gato'; document.getElementById('message').textContent = winner + ' venceu!'; setTimeout(()=>{ showGameOverOverlay(loser); },200); } }
+function checkMatchEnd(){
+  const aliveCats = cats.filter(x=>x.hp>0).length;
+  const aliveDogs = dogs.filter(x=>x.hp>0).length;
+  if(aliveCats === 0 || aliveDogs === 0){
+    running = false; gameOver = true;
+    const loser = aliveCats === 0 ? 'Gatos' : 'Cachorros';
+    const winner = aliveCats === 0 ? 'Cachorros' : 'Gatos';
+    document.getElementById('message').textContent = winner + ' venceu!';
+    setTimeout(()=>{ showGameOverOverlay(loser); },200);
+  }
+}
 
 function showGameOverOverlay(loser){ const container = document.getElementById('canvas-container'); let ov = document.getElementById('gameOver'); if(!ov){ ov = document.createElement('div'); ov.id='gameOver'; container.appendChild(ov); }
   ov.innerHTML = '<div>' + loser + ' perdeu</div><div id="insult">Noob</div><button id="reloadBtn">Voltar</button>';
