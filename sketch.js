@@ -79,7 +79,26 @@ function drawHud(){
 function updateEntities(){
   const now = millis();
   // helpers
-  function nearestHide(x,y){ let best=null; let bd=1e9; for(const s of hideSpots){ const d = dist(x,y,s.x,s.y); if(d<bd){ bd=d; best=s; } } return best; }
+  // choose a hide spot that is "safest" relative to the provided enemies
+  function safestHide(x,y,enemies){
+    if(hideSpots.length === 0) return null;
+    // if no enemies, pick nearest
+    const validEnemies = enemies ? enemies.filter(e=>e.hp>0) : [];
+    if(validEnemies.length === 0){ // fallback to nearest
+      let best=null; let bd=1e9; for(const s of hideSpots){ const d = dist(x,y,s.x,s.y); if(d<bd){ bd=d; best=s; } } return best;
+    }
+    let best = null; let bestScore = -1e9;
+    for(const s of hideSpots){
+      // distance to closest enemy (want this large)
+      let minDE = 1e9;
+      for(const e of validEnemies){ const de = dist(s.x,s.y,e.x,e.y); if(de < minDE) minDE = de; }
+      const distToSelf = dist(x,y,s.x,s.y);
+      // score: prefer spots that are far from enemies, but penalize extremely far spots so entity can reach it
+      const score = minDE - 0.35 * distToSelf;
+      if(score > bestScore){ bestScore = score; best = s; }
+    }
+    return best;
+  }
   // process cats
   for(const c of cats){ if(c.hp<=0) continue;
     // expire buffs
@@ -88,7 +107,7 @@ function updateEntities(){
     if(c.hidden && now > c.hideUntil){ c.hidden = false; }
     // if low hp, flee to hide
     const fleeThreshold = 0.28 * c.maxHp;
-  if(!c.hidden && c.hp > 0 && c.hp <= fleeThreshold){ c.state='flee'; c.targetHide = nearestHide(c.x,c.y); c.fleeSpeed = random(3,4); }
+  if(!c.hidden && c.hp > 0 && c.hp <= fleeThreshold){ c.state='flee'; c.targetHide = safestHide(c.x,c.y, dogs); c.fleeSpeed = random(3,4); }
     // if fleeing, move toward hide
   if(c.state === 'flee' && c.targetHide){ const ang = atan2(c.targetHide.y - c.y, c.targetHide.x - c.x); const baseSpeed = 1.4; const ms = baseSpeed * (c.fleeSpeed || 3.5); c.x += cos(ang)*ms; c.y += sin(ang)*ms; if(dist(c.x,c.y,c.targetHide.x,c.targetHide.y) < 22){ c.hidden = true; c.hideUntil = now + random(2000,6000); c.state = 'hidden'; // regain small HP while hidden
         c.hp = Math.min(c.maxHp, c.hp + floor(random(6,14))); }
@@ -117,7 +136,7 @@ function updateEntities(){
     if(d.buffUntil && now > d.buffUntil){ d.dmgMult = 1; d.buffUntil = 0; }
     if(d.hidden && now > d.hideUntil){ d.hidden = false; }
     const fleeThreshold = 0.28 * d.maxHp;
-  if(!d.hidden && d.hp > 0 && d.hp <= fleeThreshold){ d.state='flee'; d.targetHide = nearestHide(d.x,d.y); d.fleeSpeed = random(3,4); }
+  if(!d.hidden && d.hp > 0 && d.hp <= fleeThreshold){ d.state='flee'; d.targetHide = safestHide(d.x,d.y, cats); d.fleeSpeed = random(3,4); }
   if(d.state === 'flee' && d.targetHide){ const ang = atan2(d.targetHide.y - d.y, d.targetHide.x - d.x); const baseSpeedD = 1.5; const md = baseSpeedD * (d.fleeSpeed || 3.5); d.x += cos(ang)*md; d.y += sin(ang)*md; if(dist(d.x,d.y,d.targetHide.x,d.targetHide.y) < 22){ d.hidden = true; d.hideUntil = now + random(2000,6000); d.state='hidden'; d.hp = Math.min(d.maxHp, d.hp + floor(random(6,14))); }
     }
     if(!d.hidden && d.hp>0 && d.state !== 'flee'){
