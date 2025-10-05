@@ -1,12 +1,21 @@
 :root{--bg:#f0f0f8;--card:#fff;--accent:#ffd24a}
 *{box-sizing:border-box;font-family:Inter, Arial, sans-serif}
 body{margin:0;display:flex;flex-direction:column;align-items:center;background:var(--bg);height:100vh}
-#ui{width:760px;max-width:96%;margin:12px}
+#ui{width:1400px;max-width:96%;margin:12px}
 #hud{display:flex;gap:12px;align-items:center}
-#catHealth,#dogHealth{background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #e0e0e0}
+#catHealth,#dogHealth{background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #e0e0e0; display: none;}
 #message{flex:1;text-align:center;font-weight:700}
-#canvas-container{width:760px;height:420px;background:linear-gradient(#bfe7ff,#fff);border-radius:10px;overflow:hidden;position:relative}
-button{padding:8px 12px;border-radius:8px;border:none;background:var(--card);cursor:pointer}
+#canvas-container{width:1200px;height:500px;background:linear-gradient(#bfe7ff,#fff);border-radius:10px;overflow:hidden;position:relative}
+button{padding:8px 12px;border-radius:8px;border:none;background:var(--card);cursor:pointer;transition: all 0.2s ease;}
+button:hover{background:#e0e0e0; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+#startBtn{background:#4CAF50; color: white;}
+#startBtn:hover{background:#45a049;}
+#restartBtn{background:#f44336; color: white;}
+#restartBtn:hover{background:#da190b;}
+#simulateBtn{background:#2196F3; color: white;}
+#simulateBtn:hover{background:#0b7dda;}
+#themeBtn{background:#9C27B0; color: white;}
+#themeBtn:hover{background:#7B1FA2;}
 #abilities{display:flex;gap:8px;align-items:center;margin-top:8px}
 #abilitySelect{padding:6px;border-radius:6px}
 #attackBtn{background:#ffd24a}
@@ -14,3 +23,5 @@ button{padding:8px 12px;border-radius:8px;border:none;background:var(--card);cur
 #touchControls button{width:56px;height:56px;border-radius:50%;font-weight:700}
 #gameOver{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.6);color:white;font-size:30px}
 #insult{color:#ffde59;font-size:22px;margin-top:10px}
+#gameOver button{background:#2196F3; color: white; padding:10px 20px; font-size:18px; margin-top:20px;}
+#gameOver button:hover{background:#0b7dda;}

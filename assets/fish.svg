@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Simple stylized fish -->
+  <g transform="translate(100,100)">
+    <ellipse rx="44" ry="24" fill="#7fd3ff" stroke="#2b9bd3" stroke-width="3"/>
+    <polygon points="44,0 72,-18 72,18" fill="#2b9bd3" stroke="#1b6f9a" stroke-width="2"/>
+    <circle cx="-10" cy="-4" r="4" fill="#222"/>
+    <path d="M-30,6 C-10,14 10,12 30,6" stroke="#1b6f9a" stroke-width="2" fill="none"/>
+  </g>
+</svg>

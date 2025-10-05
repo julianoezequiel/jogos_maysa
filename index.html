@@ -9,22 +9,22 @@
 <body>
   <div id="ui">
     <div id="hud">
-      <div id="catHealth">Gato: 100</div>
-      <div id="dogHealth">Cachorro: 100</div>
-      <div id="message"></div>
-    </div>
-    <div id="matchConfig">
-      <label>Gatos: <input id="numCats" type="number" value="1" min="1" max="6" /></label>
-      <label>Cachorros: <input id="numDogs" type="number" value="1" min="1" max="6" /></label>
     </div>
     <div id="controls">
   <button id="startBtn">Iniciar</button>
       <button id="restartBtn">Reiniciar</button>
-      <label style="margin-left:12px;">Sim runs: <input id="simRuns" type="number" value="50" min="1" max="1000" style="width:80px"/></label>
-      <button id="simulateBtn">Simular</button>
+      <button id="themeBtn">Switch to Liz vs Maysa</button>
+      <button id="clearRankingBtn">Limpar Ranking</button>
+  <label style="margin-left:12px;">Gatos: <input id="numCats" type="text" value="10" /></label>
+  <label style="margin-left:12px;">Cachorros: <input id="numDogs" type="text" value="10" /></label>
+  <label style="margin-left:12px;">Calopsitas: <input id="numBirds" type="text" value="4" /></label>
+  <label style="margin-left:12px;">Peixes: <input id="numFish" type="text" value="4" /></label>
+      <span id="timer" style="margin-left:12px; font-weight:bold;">Tempo: 0:00</span>
+      <button id="historyBtn" style="margin-left:12px;">📜</button>
+      <label style="margin-left:12px;"><input type="checkbox" id="autoRestartCb"> Auto Restart</label>
     </div>
+    <div id="historyMenu" style="display:none; position:fixed; top:100px; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:10px; max-height:200px; overflow-y:auto; z-index:1000;"></div>
   </div>
-  <div id="simResults" style="padding:8px 12px; font-size:13px; color:#222;"></div>
   <main>
     <div id="canvas-container"></div>
   </main>
