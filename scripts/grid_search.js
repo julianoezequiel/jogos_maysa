@@ -83,7 +83,13 @@ function safestHide(x,y,enemies, hideSpots){
     let minDE = 1e9;
     for(const e of validEnemies){ const de = dist(s.x,s.y,e.x,e.y); if(de<minDE) minDE = de; }
     const distToSelf = dist(x,y,s.x,s.y);
-    const score = minDE - 0.35 * distToSelf;
+    // prefer tree for cats and rock for dogs/fish
+    let typeBonus = 0;
+    try{
+      // we don't have avoidEntity here; but callers often pass an entity as 'enemies' context
+      // if enemies param includes an entity with species, use that as proxy
+    }catch(e){}
+    const score = minDE - 0.35 * distToSelf + typeBonus;
     if(score > bestScore){ bestScore = score; best = s; }
   }
   return best;
@@ -92,7 +98,15 @@ function safestHide(x,y,enemies, hideSpots){
 function initMatch(nCats,nDogs, catMult, dogMult){
   const cats=[]; const dogs=[]; const birds=[]; const fish=[]; const hideSpots=[];
   const spots = 4 + Math.floor(rand(0,3));
-  for(let i=0;i<spots;i++) hideSpots.push({ x: rand(80,760-80), y: rand(60,420-60) });
+  // rebalance tree vs rock based on allied counts (cats+birds vs dogs+fish)
+  const alliedCats = nCats + Math.floor(nCats * 0.4);
+  const alliedDogs = nDogs + Math.floor(nDogs * 0.4);
+  const totalAllies = Math.max(1, alliedCats + alliedDogs);
+  const treesDesired = Math.round(spots * (alliedCats / totalAllies));
+  for(let i=0;i<spots;i++){
+    const type = (i < treesDesired) ? 'tree' : 'rock';
+    hideSpots.push({ x: rand(80,760-80), y: rand(60,420-60), type: type });
+  }
 
   for(let i=0;i<nCats;i++){
     cats.push({
@@ -117,15 +131,15 @@ function initMatch(nCats,nDogs, catMult, dogMult){
   }
   // spawn birds and fish scaled to team sizes
   const nBirds = Math.floor(nCats * 0.4);
-  for(let b=0;b<nBirds;b++) cats.push({}); // keep arrays length in sim but birds handled externally
+  for(let b=0;b<nBirds;b++) birds.push({ x: rand(60,760/2-30), y: rand(60,420-60), hp:60, maxHp:60, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec:0, state:null, targetHide:null, fleeSpeed:0, nextRegen:0, lastRegen:0, regenPerSec:0 });
   const nFish = Math.floor(nDogs * 0.4);
-  for(let f=0; f<nFish; f++) dogs.push({});
-  return {cats,dogs,hideSpots};
+  for(let f=0; f<nFish; f++) fish.push({ x: rand(760/2+30,760-60), y: rand(60,420-60), hp:80, maxHp:80, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec:0, state:null, targetHide:null, fleeSpeed:0, nextRegen:0, lastRegen:0, regenPerSec:0 });
+  return {cats,dogs,birds,fish,hideSpots};
 }
 
 function updateEntitiesTick(state){
   const now = state.now;
-  const cats = state.cats; const dogs = state.dogs; const hideSpots = state.hideSpots;
+  const cats = state.cats; const dogs = state.dogs; const birds = state.birds || []; const fish = state.fish || []; const hideSpots = state.hideSpots;
 
   for(const c of cats){
     if(c.hp<=0) continue;
@@ -165,7 +179,8 @@ function updateEntitiesTick(state){
     }
 
     if(!c.hidden && c.hp>0 && c.state !== 'flee'){
-      const enemies = dogs.filter(d=>d.hp>0 && !d.hidden);
+        const pools = [...cats, ...dogs, ...birds, ...fish];
+        const enemies = pools.filter(e=>e && e.hp>0 && !e.hidden && e !== c);
       if(enemies.length){
         let target = enemies[0];
         let bd = dist(c.x,c.y,target.x,target.y);
@@ -219,7 +234,8 @@ function updateEntitiesTick(state){
     }
 
     if(!d.hidden && d.hp>0 && d.state !== 'flee'){
-      const enemies = cats.filter(c=>c.hp>0 && !c.hidden);
+        const pools = [...cats, ...dogs, ...birds, ...fish];
+        const enemies = pools.filter(e=>e && e.hp>0 && !e.hidden && e !== d);
       if(enemies.length){
         let target = enemies[0];
         let bd = dist(d.x,d.y,target.x,target.y);
@@ -243,12 +259,70 @@ function updateEntitiesTick(state){
       }
     }
   }
+  // birds (simple cat-like behavior but faster and smaller)
+  for(const b of birds){
+    if(b.hp<=0) continue;
+    if(b.buffUntil && now > b.buffUntil){ b.dmgMult = 1; b.buffUntil = 0; }
+    if(b._maxHpBuffUntil && now > b._maxHpBuffUntil){ if(typeof b._maxHpBase === 'number') b.maxHp = b._maxHpBase; else if(b._maxHpBuff) b.maxHp = Math.max(1, b.maxHp - (b._maxHpBuff || 0)); b._maxHpBuff = 0; b._maxHpBuffUntil = 0; delete b._maxHpBase; if(b.hp > b.maxHp) b.hp = b.maxHp; }
+    if(b.hidden && now > b.hideUntil){ b.hidden = false; }
+
+    if(b.hidden){
+      if(!b.nextRegen) b.nextRegen = now + 300;
+      if(!b.lastRegen) b.lastRegen = now;
+      if(!b.regenPerSec) b.regenPerSec = rand(4,8) * (b.hiddenRegenBonus || 1.0);
+      if(now >= b.nextRegen){ const dt = now - b.lastRegen; const gained = (b.regenPerSec) * (dt/1000); b.hp = Math.min(b.maxHp, b.hp + gained); b.lastRegen = now; b.nextRegen = now + 300; }
+    }
+
+    const fleeThreshold = 0.28 * b.maxHp;
+    if(!b.hidden && b.hp > 0 && b.hp <= fleeThreshold){ b.state='flee'; b.targetHide = safestHide(b.x,b.y, dogs, hideSpots); b.fleeSpeed = rand(2.5,3.5); }
+
+    if(b.state === 'flee' && b.targetHide){ const ang = Math.atan2(b.targetHide.y - b.y, b.targetHide.x - b.x); const ms = (b.moveSpeed || 1.8) * (b.fleeSpeed || 3.0); b.x += Math.cos(ang)*ms; b.y += Math.sin(ang)*ms; if(dist(b.x,b.y,b.targetHide.x,b.targetHide.y) < 20){ b.hidden = true; b.hideUntil = now + rand(1500,4000); b.state = 'hidden'; b.hideStart = now; b.nextRegen = now + 300; b.lastRegen = now; b.regenPerSec = rand(4,8) * (b.hiddenRegenBonus || 1.0); } }
+
+    if(!b.hidden && b.hp>0 && b.state !== 'flee'){
+      const pools = [...cats, ...dogs, ...birds, ...fish];
+      const enemies = pools.filter(e=>e && e.hp>0 && !e.hidden && e !== b);
+      if(enemies.length){ let target = enemies[0]; let bd = dist(b.x,b.y,target.x,target.y); for(const e of enemies){ const dd = dist(b.x,b.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
+        const ang = Math.atan2(target.y - b.y, target.x - b.x); b.x += Math.cos(ang)*1.6; b.y += Math.sin(ang)*1.6; if(bd < 60 && now - b.lastAttack > (b.attackCooldown || 500)){ b.lastAttack = now; const chosen = pickByProb(birdAbilities); performAbility(b,target,chosen,now); }
+      }
+    }
+  }
+
+  // fish (simple dog-like behavior but aquatic flavor)
+  for(const f of fish){
+    if(f.hp<=0) continue;
+    if(f.buffUntil && now > f.buffUntil){ f.dmgMult = 1; f.buffUntil = 0; }
+    if(f._maxHpBuffUntil && now > f._maxHpBuffUntil){ if(typeof f._maxHpBase === 'number') f.maxHp = f._maxHpBase; else if(f._maxHpBuff) f.maxHp = Math.max(1, f.maxHp - (f._maxHpBuff || 0)); f._maxHpBuff = 0; f._maxHpBuffUntil = 0; delete f._maxHpBase; if(f.hp > f.maxHp) f.hp = f.maxHp; }
+    if(f.hidden && now > f.hideUntil){ f.hidden = false; }
+
+    if(f.hidden){
+      if(!f.nextRegen) f.nextRegen = now + 300;
+      if(!f.lastRegen) f.lastRegen = now;
+      if(!f.regenPerSec) f.regenPerSec = rand(4,8) * (f.hiddenRegenBonus || 1.0);
+      if(now >= f.nextRegen){ const dt = now - f.lastRegen; const gained = (f.regenPerSec) * (dt/1000); f.hp = Math.min(f.maxHp, f.hp + gained); f.lastRegen = now; f.nextRegen = now + 300; }
+    }
+
+    const fleeThresholdF = 0.28 * f.maxHp;
+    if(!f.hidden && f.hp > 0 && f.hp <= fleeThresholdF){ f.state='flee'; f.targetHide = safestHide(f.x,f.y, cats, hideSpots); f.fleeSpeed = rand(2.5,3.5); }
+
+    if(f.state === 'flee' && f.targetHide){ const ang = Math.atan2(f.targetHide.y - f.y, f.targetHide.x - f.x); const ms = (f.moveSpeed || 1.2) * (f.fleeSpeed || 3.0); f.x += Math.cos(ang)*ms; f.y += Math.sin(ang)*ms; if(dist(f.x,f.y,f.targetHide.x,f.targetHide.y) < 22){ f.hidden = true; f.hideUntil = now + rand(2000,5000); f.state = 'hidden'; f.hideStart = now; f.nextRegen = now + 300; f.lastRegen = now; f.regenPerSec = rand(4,8) * (f.hiddenRegenBonus || 1.0); } }
+
+    if(!f.hidden && f.hp>0 && f.state !== 'flee'){
+      const pools = [...cats, ...dogs, ...birds, ...fish];
+      const enemies = pools.filter(e=>e && e.hp>0 && !e.hidden && e !== f);
+      if(enemies.length){ let target = enemies[0]; let bd = dist(f.x,f.y,target.x,target.y); for(const e of enemies){ const dd = dist(f.x,f.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
+        const ang = Math.atan2(target.y - f.y, target.x - f.x);
+        f.x += Math.cos(ang)*1.3 * (f.moveSpeed || 1.2);
+        f.y += Math.sin(ang)*1.3 * (f.moveSpeed || 1.2);
+        if(bd < 66 && now - f.lastAttack > (f.attackCooldown || 700)){ f.lastAttack = now; const chosen = pickByProb(fishAbilities); performAbility(f,target,chosen,now); }
+      }
+    }
+  }
 }
 
 function runOneSimple(nCats,nDogs,catMult,dogMult){
   const m = initMatch(nCats,nDogs,catMult,dogMult);
-  const cats = m.cats; const dogs = m.dogs; const hideSpots = m.hideSpots;
-  const state = {cats,dogs,hideSpots,now:0};
+  const cats = m.cats; const dogs = m.dogs; const birds = m.birds || []; const fish = m.fish || []; const hideSpots = m.hideSpots;
+  const state = {cats,dogs,birds,fish,hideSpots,now:0};
   const tickMs = 200; const MAX_TICKS = 12000; let ticks=0;
   while(true){
     if(ticks++ > MAX_TICKS) break;
@@ -256,11 +330,14 @@ function runOneSimple(nCats,nDogs,catMult,dogMult){
     updateEntitiesTick(state);
     const ac = cats.filter(x=>x.hp>0).length;
     const ad = dogs.filter(x=>x.hp>0).length;
-    if(ac===0 || ad===0) break;
+    const ab = birds.filter(x=>x.hp>0).length; const af = fish.filter(x=>x.hp>0).length;
+    const living = [ac>0, ad>0, ab>0, af>0].filter(Boolean).length;
+    if(living <= 1) break;
   }
   const ac = cats.filter(x=>x.hp>0).length;
   const ad = dogs.filter(x=>x.hp>0).length;
-  return {ac,ad,ticks};
+  const ab = birds.filter(x=>x.hp>0).length; const af = fish.filter(x=>x.hp>0).length;
+  return {ac,ad,ab,af,ticks};
 }
 
 function runGrid(){

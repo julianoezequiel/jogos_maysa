@@ -5,6 +5,10 @@ function getCatName() { return currentTheme === 'lizmaysa' ? 'Liz' : 'Gato'; }
 function getDogName() { return currentTheme === 'lizmaysa' ? 'Maysa' : 'Cachorro'; }
 function getCatsName() { return currentTheme === 'lizmaysa' ? 'Liz' : 'Gatos'; }
 function getDogsName() { return currentTheme === 'lizmaysa' ? 'Maysa' : 'Cachorros'; }
+function getBirdName() { return 'Calopsita'; }
+function getBirdsName() { return 'Calopsitas'; }
+function getFishName() { return 'Peixe'; }
+function getFishsName() { return 'Peixes'; }
 let running = false;
 let gameOver = false;
 let particles = [];
@@ -15,12 +19,16 @@ let fish = [];
 let hideSpots = [];
 let catWins = 0;
 let dogWins = 0;
+let birdWins = 0;
+let fishWins = 0;
 let rankingStartTime = 0;
 let timerInterval;
 let startTime;
 let gameHistories = [];
 let initialCats = 0;
 let initialDogs = 0;
+let initialBirds = 0;
+let initialFish = 0;
 
 const catAbilities = [
   {name:'Scratch', type:'damage', min:9, max:16, prob:0.6},
@@ -45,21 +53,25 @@ const birdAbilities = [
   {name:'Peck', type:'damage', min:6, max:12, prob:0.6},
   {name:'Feather Mend', type:'heal', min:4, max:8, prob:0.15},
   {name:'Wing Gust', type:'buffSpeed', amount:0.5, duration:2500, prob:0.15},
-  {name:'Flock Cry', type:'buffDamage', amount:0.3, duration:3500, prob:0.1}
+  {name:'Flock Cry', type:'buffDamage', amount:0.3, duration:3500, prob:0.1},
+  // Shadow Dash: short burst that deals damage and grants temporary speed
+  {name:'Shadow Dash', type:'dash', damage:12, speedBoost:0.6, duration:600, prob:0.08}
 ];
 
 const fishAbilities = [
   {name:'Bite', type:'damage', min:7, max:11, prob:0.6},
   {name:'Slime Heal', type:'heal', min:3, max:6, prob:0.15},
   {name:'Slippery', type:'buffSpeed', amount:0.35, duration:2000, prob:0.1},
-  {name:'Water Surge', type:'buffMaxHp', amount:12, duration:7000, prob:0.15}
+  {name:'Water Surge', type:'buffMaxHp', amount:12, duration:7000, prob:0.15},
+  // Berserker Rage: high damage multiplier for a duration with HP drain per second
+  { name: 'Berserker Rage', type: 'berserk', amount: 1.0, duration: 7000, selfHpCostPerSec: 1, prob: 0.12 }
 ];
-
 function preload(){
   catImg = loadImage('assets/cat.svg');
   dogImg = loadImage('assets/dog.svg');
-  lizImg = loadImage('assets/rosto_maysa.png');
-  maysaImg = loadImage('assets/rosto_liz.png');
+  // corrected image filenames (match files in assets/)
+  lizImg = loadImage('assets/elizabeth_rosto.png');
+  maysaImg = loadImage('assets/maysa_rosto.png');
   // new hide spot images
   treeImg = loadImage('assets/tree.svg');
   rockImg = loadImage('assets/rock.svg');
@@ -84,7 +96,7 @@ function setup(){ const c = createCanvas(1200,500); c.parent('canvas-container')
   const _themeBtn = document.getElementById('themeBtn');
   if(_themeBtn){ _themeBtn.addEventListener('click', switchTheme); }
   const _clearRankingBtn = document.getElementById('clearRankingBtn');
-  if(_clearRankingBtn){ _clearRankingBtn.addEventListener('click', () => { catWins = 0; dogWins = 0; rankingStartTime = millis(); saveRanking(); }); }
+  if(_clearRankingBtn){ _clearRankingBtn.addEventListener('click', () => { catWins = 0; dogWins = 0; birdWins = 0; fishWins = 0; rankingStartTime = millis(); saveRanking(); }); }
   const _historyBtn = document.getElementById('historyBtn');
   if(_historyBtn){ _historyBtn.addEventListener('click', toggleHistoryMenu); }
   // clamp inputs to max 100
@@ -99,12 +111,16 @@ function setup(){ const c = createCanvas(1200,500); c.parent('canvas-container')
   // Load ranking from localStorage
   catWins = parseInt(localStorage.getItem('catWins')) || 0;
   dogWins = parseInt(localStorage.getItem('dogWins')) || 0;
+  birdWins = parseInt(localStorage.getItem('birdWins')) || 0;
+  fishWins = parseInt(localStorage.getItem('fishWins')) || 0;
   gameHistories = JSON.parse(localStorage.getItem('gameHistories')) || [];
 }
 
 function saveRanking() {
   localStorage.setItem('catWins', catWins);
   localStorage.setItem('dogWins', dogWins);
+  localStorage.setItem('birdWins', birdWins);
+  localStorage.setItem('fishWins', fishWins);
   localStorage.setItem('gameHistories', JSON.stringify(gameHistories));
 }
 
@@ -143,7 +159,14 @@ function toggleHistoryMenu() {
       gameHistories.forEach((h, i) => {
         let details = `${i+1}. ${h.date || 'Data não disponível'} - ${h.winner} venceu (${h.alive} vivos) em ${h.time}`;
         if (h.initialCats !== undefined) {
-          details += `.<br>Iniciais: ${h.initialCats} ${getCatsName().toLowerCase()}, ${h.initialDogs} ${getDogsName().toLowerCase()}.<br>Mortos: ${h.killedCats} ${getCatsName().toLowerCase()}, ${h.killedDogs} ${getDogsName().toLowerCase()}.`;
+          details += `.<br>Iniciais: ${h.initialCats} ${getCatsName().toLowerCase()}, ${h.initialDogs} ${getDogsName().toLowerCase()}`;
+          if(h.initialBirds !== undefined) details += `, ${h.initialBirds} calopsitas`;
+          if(h.initialFish !== undefined) details += `, ${h.initialFish} peixes`;
+          details += `.`;
+          details += `<br>Mortos: ${h.killedCats} ${getCatsName().toLowerCase()}, ${h.killedDogs} ${getDogsName().toLowerCase()}`;
+          if(h.killedBirds !== undefined) details += `, ${h.killedBirds} calopsitas`;
+          if(h.killedFish !== undefined) details += `, ${h.killedFish} peixes`;
+          details += `.`;
         }
         menu.innerHTML += `<p>${details}</p>`;
       });
@@ -175,18 +198,27 @@ function switchTheme(){
 // Headless simulation runner: runs N matches (no rendering) and reports stats
 function runSimulations(runs){
   const results = { cats:0, dogs:0, draws:0, totalTurns:0 };
+  const aliveBirdTotals = { sum: 0 };
+  const aliveFishTotals = { sum: 0 };
   for(let i=0;i<runs;i++){
     const nCats = Math.max(1, parseInt(document.getElementById('numCats').value||10));
     const nDogs = Math.max(1, parseInt(document.getElementById('numDogs').value||10));
+    const nBirds = Math.max(0, parseInt(document.getElementById('numBirds').value||10));
+    const nFish = Math.max(0, parseInt(document.getElementById('numFish').value||10));
     // seed a match
     initMatchStateForSim(nCats, nDogs);
     let turns = 0; const MAX_TURNS = 12000; // cap
     while(!isMatchOver() && turns++ < MAX_TURNS){ updateEntitiesSim(); }
     const ac = cats.filter(x=>x.hp>0).length; const ad = dogs.filter(x=>x.hp>0).length;
+    const ab = birds.filter(x=>x.hp>0).length; const af = fish.filter(x=>x.hp>0).length;
+    aliveBirdTotals.sum += ab;
+    aliveFishTotals.sum += af;
     if(ac > 0 && ad === 0) results.cats++; else if(ad > 0 && ac === 0) results.dogs++; else results.draws++;
     results.totalTurns += turns;
   }
-  const out = `Simulações: ${runs} | ${getCatsName()}: ${results.cats} | ${getDogsName()}: ${results.dogs} | Empates: ${results.draws} | Turnos médios: ${Math.round(results.totalTurns / runs)}`;
+  const avgBirds = Math.round((aliveBirdTotals.sum || 0) / runs);
+  const avgFish = Math.round((aliveFishTotals.sum || 0) / runs);
+  const out = `Simulações: ${runs} | ${getCatsName()}: ${results.cats} | ${getDogsName()}: ${results.dogs} | Empates: ${results.draws} | Turnos médios: ${Math.round(results.totalTurns / runs)} | Calopsitas médias vivas: ${avgBirds} | Peixes médios vivos: ${avgFish}`;
   document.getElementById('simResults').textContent = out;
   // restore any visual state
   startGame();
@@ -205,20 +237,56 @@ function initMatchStateForSim(nCats,nDogs){
   }
   // spawn animals at fully random positions across arena (not left/right halves)
   for(let i=0;i<nCats;i++){
-    cats.push({ x: random(60, width-60), y: random(60, height-60), hp:110, maxHp:110, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:26, moveSpeed: 1.7, attackCooldown: 600, speciesDamageMultiplier: 1.0, hiddenRegenBonus: 1.25, walkRegenPerSec: 1.0, fleeSpeed: 3 });
+    const factoryCat = (window && window.createCat) ? window.createCat : null;
+    if(factoryCat){ cats.push(factoryCat(random(60, width-60), random(60, height-60), { hp:110, maxHp:110, walkRegenPerSec: 1.0 })); }
+    else { cats.push({ x: random(60, width-60), y: random(60, height-60), hp:110, maxHp:110, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:26, moveSpeed: 1.7, attackCooldown: 600, speciesDamageMultiplier: 1.0, hiddenRegenBonus: 1.25, walkRegenPerSec: 1.0, fleeSpeed: 3, species: 'cat' }); }
   }
   for(let j=0;j<nDogs;j++){
-  dogs.push({ x: random(60, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:34, moveSpeed: 1.45, attackCooldown: 700, speciesDamageMultiplier: 1.0, hiddenRegenBonus: 1.0, walkRegenPerSec: random(2.5,4.0), fleeSpeed: 1 });
+  const factoryDog = (window && window.createDog) ? window.createDog : null;
+  if(factoryDog){ dogs.push(factoryDog(random(60, width-60), random(60, height-60), { hp:100, maxHp:100, walkRegenPerSec: random(2.5,4.0) })); }
+  else { dogs.push({ x: random(60, width-60), y: random(60, height-60), hp:100, maxHp:100, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:34, moveSpeed: 1.45, attackCooldown: 700, speciesDamageMultiplier: 1.0, hiddenRegenBonus: 1.0, walkRegenPerSec: random(2.5,4.0), fleeSpeed: 1, species: 'dog' }); }
   }
   // spawn small flocks of birds allied to cats for simulation
   const nBirds = Math.floor(nCats * 0.4);
-  for(let b=0;b<nBirds;b++) birds.push({ x: random(60, width-60), y: random(60, height-60), hp:60, maxHp:60, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec: random(0.5,1.0), fleeSpeed:3 });
+  for(let b=0;b<nBirds;b++) birds.push({ x: random(60, width-60), y: random(60, height-60), hp:60, maxHp:60, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec: random(0.5,1.0), fleeSpeed:3, species: 'bird' });
   // spawn fish allied to dogs for simulation
   const nFish = Math.floor(nDogs * 0.4);
-  for(let f=0; f<nFish; f++) fish.push({ x: random(60, width-60), y: random(60, height-60), hp:80, maxHp:80, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec: random(0.5,1.5), fleeSpeed:1.5 });
+  for(let f=0; f<nFish; f++) fish.push({ x: random(60, width-60), y: random(60, height-60), hp:80, maxHp:80, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec: random(0.5,1.5), fleeSpeed:1.5, species: 'fish' });
+  // substituir pássaros/fish usando factories quando disponíveis
+  // (Esta parte será refeita no startGame abaixo também para inicialização de UI)
+  const factoryBird = (window && window.createBird) ? window.createBird : null;
+  const nBirdsLocal = Math.floor(nCats * 0.4);
+  birds = [];
+  for(let b=0;b<nBirdsLocal;b++){
+    if(factoryBird) birds.push(factoryBird(random(60, width-60), random(60, height-60), { walkRegenPerSec: random(0.5,1.0) }));
+    else birds.push({ x: random(60, width-60), y: random(60, height-60), hp:60, maxHp:60, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec: random(0.5,1.0), fleeSpeed:3, species: 'bird' });
+  }
+  const factoryFish = (window && window.createFish) ? window.createFish : null;
+  const nFishLocal = Math.floor(nDogs * 0.4);
+  fish = [];
+  for(let f=0; f<nFishLocal; f++){
+    if(factoryFish) fish.push(factoryFish(random(60, width-60), random(60, height-60), { walkRegenPerSec: random(0.5,1.5) }));
+    else fish.push({ x: random(60, width-60), y: random(60, height-60), hp:80, maxHp:80, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec: random(0.5,1.5), fleeSpeed:1.5, species: 'fish' });
+  }
 }
 
-function isMatchOver(){ const aliveCats = cats.filter(x=>x.hp>0).length; const aliveDogs = dogs.filter(x=>x.hp>0).length; return (aliveCats === 0 || aliveDogs === 0); }
+// return true only when exactly one species still has living members
+function isMatchOver(){
+  const counts = {
+    cat: cats.filter(x=>x.hp>0).length,
+    dog: dogs.filter(x=>x.hp>0).length,
+    bird: birds.filter(x=>x.hp>0).length,
+    fish: fish.filter(x=>x.hp>0).length
+  };
+  const livingSpecies = Object.keys(counts).filter(k=>counts[k] > 0);
+  return livingSpecies.length <= 1;
+}
+
+// helper: return array of living enemy entities for a given entity (any species != own)
+function livingEnemiesOf(entity){
+  const pools = [...cats, ...dogs, ...birds, ...fish];
+  return pools.filter(e=>e && e.hp>0 && !e.hidden && e.species && e.species !== entity.species);
+}
 
 // fast, simplified update loop for simulation: reuse update logic but avoid heavy drawing/particle ops
 function updateEntitiesSim(){ // reuse updateEntities() internals but avoid creating particles or DOM reads
@@ -230,17 +298,26 @@ function startGame(){
   // read config
   let nCats = Math.max(1, parseInt(document.getElementById('numCats').value||10));
   let nDogs = Math.max(1, parseInt(document.getElementById('numDogs').value||10));
+  let nBirds = Math.max(0, parseInt(document.getElementById('numBirds').value||10));
+  let nFish = Math.max(0, parseInt(document.getElementById('numFish').value||10));
   // enforce global cap
   const MAX_ENTITIES = 100;
   nCats = Math.min(nCats, MAX_ENTITIES);
   nDogs = Math.min(nDogs, MAX_ENTITIES);
   initialCats = nCats;
   initialDogs = nDogs;
-  cats = []; dogs = []; hideSpots = [];
+  initialBirds = nBirds;
+  initialFish = nFish;
+  cats = []; dogs = []; birds = []; fish = []; hideSpots = [];
   // create hide spots (fixed at 10)
   const spots = 10;
+  // rebalance hide spot types according to allied counts: cats+birds vs dogs+fish
+  const alliedCats = nCats + nBirds;
+  const alliedDogs = nDogs + nFish;
+  const totalAllies = Math.max(1, alliedCats + alliedDogs);
+  const treesDesired = Math.round(spots * (alliedCats / totalAllies));
   for(let i=0;i<spots;i++){
-    const type = random(['tree','rock']);
+    const type = (i < treesDesired) ? 'tree' : 'rock';
     const r = 60; // increased radius for larger hide spots
     hideSpots.push({ x: random(80, width-80), y: random(60, height-60), type: type, radius: r });
   }
@@ -248,24 +325,22 @@ function startGame(){
   for(let i=0;i<nCats;i++){
     cats.push({ x: random(60, width-60), y: random(60, height-60), hp:160, maxHp:160, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:30,
       // cat traits (tweaked): still quick but slightly nerfed in damage and hidden regen, faster flee
-      moveSpeed: 1.9, attackCooldown: 550, speciesDamageMultiplier: 1.25, hiddenRegenBonus: 1.25, walkRegenPerSec: random(1.5,2.5), fleeSpeed: 3
+      moveSpeed: 1.9, attackCooldown: 550, speciesDamageMultiplier: 1.25, hiddenRegenBonus: 1.25, walkRegenPerSec: random(1.5,2.5), fleeSpeed: 3, species: 'cat'
     });
   }
   for(let j=0;j<nDogs;j++){
     dogs.push({ x: random(60, width-60), y: random(60, height-60), hp:90, maxHp:90, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:38,
       // dog traits (tweaked): stronger and a bit faster, better walk regen and slightly quicker attacks
-      moveSpeed: 1.45, attackCooldown: 700, speciesDamageMultiplier: 1.2, hiddenRegenBonus: 1.0, walkRegenPerSec: random(1.5,3.0), fleeSpeed: 1
+      moveSpeed: 1.45, attackCooldown: 700, speciesDamageMultiplier: 1.2, hiddenRegenBonus: 1.0, walkRegenPerSec: random(1.5,3.0), fleeSpeed: 1, species: 'dog'
     });
   }
   // spawn birds (allied to cats)
-  let nBirds = Math.max(0, parseInt(document.getElementById('numBirds') ? document.getElementById('numBirds').value : 0) || 0);
   for(let b=0;b<nBirds;b++){
-    birds.push({ x: random(60, width-60), y: random(60, height-60), hp:60, maxHp:60, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec: random(0.5,1.0), fleeSpeed:3 });
+    birds.push({ x: random(60, width-60), y: random(60, height-60), hp:60, maxHp:60, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec: random(0.5,1.0), fleeSpeed:3, species: 'bird' });
   }
   // spawn fish (allied to dogs)
-  let nFish = Math.max(0, parseInt(document.getElementById('numFish') ? document.getElementById('numFish').value : 0) || 0);
   for(let f=0;f<nFish;f++){
-    fish.push({ x: random(60, width-60), y: random(60, height-60), hp:80, maxHp:80, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec: random(0.5,1.5), fleeSpeed:1.5 });
+    fish.push({ x: random(60, width-60), y: random(60, height-60), hp:80, maxHp:80, dmgMult:1, speedMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec: random(0.5,1.5), fleeSpeed:1.5, species: 'fish' });
   }
   rankingStartTime = millis();
   startTimer();
@@ -301,41 +376,52 @@ try{ if(typeof window !== 'undefined') window.drawParticles = drawParticles; }ca
 
 // full checkMatchEnd implementation (moved earlier so draw() can call it)
 function checkMatchEnd(){
-  const aliveCats = cats.filter(x=>x.hp>0).length;
-  const aliveDogs = dogs.filter(x=>x.hp>0).length;
-  if(aliveCats === 0 || aliveDogs === 0){
+  const counts = {
+    cat: cats.filter(x=>x.hp>0).length,
+    dog: dogs.filter(x=>x.hp>0).length,
+    bird: birds.filter(x=>x.hp>0).length,
+    fish: fish.filter(x=>x.hp>0).length
+  };
+  const livingSpecies = Object.keys(counts).filter(k=>counts[k] > 0);
+  if(livingSpecies.length <= 1){
     running = false; gameOver = true;
-    const loser = aliveCats === 0 ? getCatsName() : getDogsName();
-    const winner = aliveCats === 0 ? getDogsName() : getCatsName();
-    const winnerAlive = aliveCats === 0 ? aliveDogs : aliveCats;
+    const winnerKey = livingSpecies.length === 1 ? livingSpecies[0] : null;
+    const winnerName = winnerKey === 'cat' ? getCatsName() : winnerKey === 'dog' ? getDogsName() : winnerKey === 'bird' ? getBirdsName() : winnerKey === 'fish' ? getFishName() : 'Ninguém';
+    const winnerAlive = winnerKey ? counts[winnerKey] : 0;
     const elapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
     const minutes = Math.floor(elapsed / 60);
     const seconds = elapsed % 60;
     const timeStr = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-    const killedCats = initialCats - aliveCats;
-    const killedDogs = initialDogs - aliveDogs;
+    // compute killed per species
+    const killedCats = initialCats - counts.cat;
+    const killedDogs = initialDogs - counts.dog;
+    const killedBirds = initialBirds - counts.bird;
+    const killedFish = initialFish - counts.fish;
     gameHistories.push({
-      winner: winner,
+      winner: winnerName,
+      winnerKey: winnerKey,
       alive: winnerAlive,
       time: timeStr,
       date: new Date().toLocaleString(),
       initialCats: initialCats,
       initialDogs: initialDogs,
+      initialBirds: initialBirds,
+      initialFish: initialFish,
       killedCats: killedCats,
-      killedDogs: killedDogs
+      killedDogs: killedDogs,
+      killedBirds: killedBirds,
+      killedFish: killedFish
     });
-    // Keep only last 10
     if (gameHistories.length > 10) gameHistories.shift();
-    // Increment wins
-    if (aliveCats === 0) {
-      dogWins++;
-    } else {
-      catWins++;
-    }
+    // Increment wins for the winner species
+    if(winnerKey === 'cat') catWins++;
+    else if(winnerKey === 'dog') dogWins++;
+    else if(winnerKey === 'bird') birdWins++;
+    else if(winnerKey === 'fish') fishWins++;
     saveRanking();
     stopTimer();
-  const _msgEnd = document.getElementById('message'); if(_msgEnd) _msgEnd.textContent = winner + ' venceu!';
-    setTimeout(()=>{ showGameOverOverlay(loser); },200);
+    const _msgEnd = document.getElementById('message'); if(_msgEnd) _msgEnd.textContent = winnerName + ' venceu!';
+    setTimeout(()=>{ showGameOverOverlay(winnerKey); },200);
     // Auto restart after 10 seconds if enabled
     if (document.getElementById('autoRestartCb').checked) {
       setTimeout(() => { resetGame(); }, 10000);
@@ -343,8 +429,14 @@ function checkMatchEnd(){
   }
 }
 // drawGameOver & showGameOverOverlay moved earlier so draw() can call them
-function showGameOverOverlay(loser){ const container = document.getElementById('canvas-container') || document.body; let ov = document.getElementById('gameOver'); if(!ov){ ov = document.createElement('div'); ov.id='gameOver'; container.appendChild(ov); }
-  ov.innerHTML = '<div>' + loser + ' perdeu</div><div id="insult">Noob</div><button id="reloadBtn">Voltar</button>';
+function showGameOverOverlay(winnerKey){
+  const container = document.getElementById('canvas-container') || document.body;
+  let ov = document.getElementById('gameOver');
+  if(!ov){ ov = document.createElement('div'); ov.id='gameOver'; container.appendChild(ov); }
+  const winnerLabel = winnerKey === 'cat' ? getCatsName() : winnerKey === 'dog' ? getDogsName() : winnerKey === 'bird' ? getBirdsName() : winnerKey === 'fish' ? getFishName() : 'Empate';
+  ov.innerHTML = '<div style="font-size:24px;font-weight:700;margin-bottom:8px;">Parabéns!</div>' +
+                '<div style="font-size:18px;margin-bottom:12px;">' + winnerLabel + ' venceu o duelo!</div>' +
+                '<button id="reloadBtn">Jogar novamente</button>';
   const btn = ov.querySelector('#reloadBtn'); if(btn){ btn.addEventListener('click', ()=>{ resetGame(); }); }
 }
 
@@ -422,10 +514,10 @@ function draw(){ background(255);
   for(const c of cats){ push(); translate(c.x,c.y); drawCatSprite(0,0,32,c); if(c.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,36,36); } pop(); }
   // draw dogs
   for(const d of dogs){ push(); translate(d.x,d.y); drawDogSprite(0,0,38,d); if(d.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,40,40); } pop(); }
-  // draw birds
-  for(const b of birds){ push(); translate(b.x,b.y); if(birdImg){ image(birdImg,0,0,28,28); } else { drawCatSprite(0,0,20,b); } if(b.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,26,26); } pop(); }
-  // draw fish
-  for(const f of fish){ push(); translate(f.x,f.y); if(fishImg){ image(fishImg,0,0,30,30); } else { drawDogSprite(0,0,24,f); } if(f.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,28,28); } pop(); }
+  // draw birds (bigger)
+  for(const b of birds){ push(); translate(b.x,b.y); if(birdImg){ image(birdImg,0,0,40,40); } else { drawCatSprite(0,0,28,b); } if(b.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,36,36); } pop(); }
+  // draw fish (bigger)
+  for(const f of fish){ push(); translate(f.x,f.y); if(fishImg){ image(fishImg,0,0,44,44); } else { drawDogSprite(0,0,32,f); } if(f.hidden) { noStroke(); fill(255,255,255,120); ellipse(0,0,42,42); } pop(); }
   // HUD
   // HUD bars
   drawHud();
@@ -434,20 +526,27 @@ function draw(){ background(255);
   const beforeDogs = dogs.length; dogs = dogs.filter(d=> d.hp > 0);
   const beforeBirds = birds.length; birds = birds.filter(b => b.hp > 0);
   const beforeFish = fish.length; fish = fish.filter(f => f.hp > 0);
-  // on-canvas counters
-  push(); noStroke(); fill(0,0,0,200); rect(8,8,160,44,6); fill(255); textAlign(LEFT,TOP); textSize(14); text(getCatsName() + ': ' + cats.length, 14, 12); text(getDogsName() + ': ' + dogs.length, 14, 28); pop();
-  // ranking on the side
-  push(); noStroke(); fill(0,0,0,200); rect(width - 200, 8, 190, 60, 6); fill(255); textAlign(LEFT,TOP); textSize(14);
-  text(getCatName() + ' Vitórias: ' + catWins, width - 190, 12);
-  text(getDogName() + ' Vitórias: ' + dogWins, width - 190, 28);
+  // on-canvas counters (include new species)
+  push(); noStroke(); fill(0,0,0,200); rect(8,8,180,88,6); fill(255); textAlign(LEFT,TOP); textSize(14);
+  text(getCatsName() + ': ' + cats.length, 14, 12);
+  text(getDogsName() + ': ' + dogs.length, 14, 30);
+  text('Calopsitas: ' + birds.length, 14, 48);
+  text('Peixes: ' + fish.length, 14, 66);
+  pop();
+  // ranking on the side: only show total victories per species
+  push(); noStroke(); fill(0,0,0,200); rect(width - 220, 8, 210, 110, 6); fill(255); textAlign(LEFT,TOP); textSize(14);
+  text(getCatName() + ': ' + catWins, width - 210, 12);
+  text(getDogName() + ': ' + dogWins, width - 210, 34);
+  text(getBirdName() + ': ' + birdWins, width - 210, 56);
+  text(getFishName() + ': ' + fishWins, width - 210, 78);
   pop();
   // particles/effects
   drawParticles();
   // draw HP bars on top of everything
   for(const c of cats){ if(c.hp > 0) drawHpBar(c.x, c.y - 22, 24, c.hp, c.maxHp); }
   for(const d of dogs){ if(d.hp > 0) drawHpBar(d.x, d.y - 26, 28, d.hp, d.maxHp); }
-  for(const b of birds){ if(b.hp > 0) drawHpBar(b.x, b.y - 18, 18, b.hp, b.maxHp); }
-  for(const f of fish){ if(f.hp > 0) drawHpBar(f.x, f.y - 20, 20, f.hp, f.maxHp); }
+  for(const b of birds){ if(b.hp > 0) drawHpBar(b.x, b.y - 22, 28, b.hp, b.maxHp); }
+  for(const f of fish){ if(f.hp > 0) drawHpBar(f.x, f.y - 24, 32, f.hp, f.maxHp); }
   if(gameOver){ drawGameOver(); }
 }
 
@@ -469,26 +568,45 @@ function drawHud(){
   const aliveCats = cats.filter(x=>x.hp>0).length; const aliveDogs = dogs.filter(x=>x.hp>0).length;
   const totalCatHp = cats.reduce((s,e)=>s + Math.max(0,e.hp),0);
   const totalDogHp = dogs.reduce((s,e)=>s + Math.max(0,e.hp),0);
+  const totalBirdHp = birds.reduce((s,e)=>s + Math.max(0,e.hp),0);
+  const totalFishHp = fish.reduce((s,e)=>s + Math.max(0,e.hp),0);
   // draw total team HP bars on canvas
   push();
-  const barW = 220; const barH = 14; const gap = 8;
-  // compute max possible HP totals using current maxHp values
+  // compact 4-bars layout: cats, dogs, birds, fish side-by-side
+  const barW = 110; const barH = 10; const spacing = 8;
   const maxCatHpTotal = Math.max(1, cats.reduce((s,e)=>s + (e.maxHp||100),0));
   const maxDogHpTotal = Math.max(1, dogs.reduce((s,e)=>s + (e.maxHp||100),0));
+  const maxBirdHpTotal = Math.max(1, birds.reduce((s,e)=>s + (e.maxHp||60),0));
+  const maxFishHpTotal = Math.max(1, fish.reduce((s,e)=>s + (e.maxHp||80),0));
   const pctCat = constrain(totalCatHp / maxCatHpTotal, 0, 1);
   const pctDog = constrain(totalDogHp / maxDogHpTotal, 0, 1);
-  // position bars top-center
-  const cx = width/2; const y = 12;
-  // background
-  noStroke(); fill(0,0,0,120); rect(cx - (barW+gap)/2 - 6, y - 6, (barW+gap) + 12, barH*2 + 18, 6);
-  // cat bar (top)
-  stroke(0,0,0,150); strokeWeight(1); fill(80,160,255); rect(cx - barW/2, y, barW, barH, 4);
-  noStroke(); fill(30,120,220); rect(cx - barW/2 + 1, y + 1, (barW-2) * pctCat, barH-2, 3);
-  fill(255); textSize(11); textAlign(CENTER,CENTER); fill(255); text(getCatsName() + ' ' + Math.round(pctCat*100) + '%', cx, y + barH/2);
-  // dog bar (below)
-  stroke(0,0,0,150); strokeWeight(1); fill(255,140,100); rect(cx - barW/2, y + barH + 8, barW, barH, 4);
-  noStroke(); fill(220,90,40); rect(cx - barW/2 + 1, y + barH + 9, (barW-2) * pctDog, barH-2, 3);
-  fill(255); textSize(11); textAlign(CENTER,CENTER); fill(255); text(getDogsName() + ' ' + Math.round(pctDog*100) + '%', cx, y + barH + 8 + barH/2);
+  const pctBird = constrain(totalBirdHp / maxBirdHpTotal, 0, 1);
+  const pctFish = constrain(totalFishHp / maxFishHpTotal, 0, 1);
+  const totalW = (barW * 4) + (spacing * 3);
+  const cx = width/2; const y = 10;
+  // background strip
+  noStroke(); fill(0,0,0,120); rect(cx - totalW/2 - 8, y - 6, totalW + 16, barH + 34, 6);
+  // draw each bar with label under it
+  const baseX = cx - totalW/2;
+  // cats
+  stroke(0,0,0,150); strokeWeight(1); fill(80,160,255); rect(baseX, y, barW, barH, 4);
+  noStroke(); fill(30,120,220); rect(baseX + 1, y + 1, (barW-2) * pctCat, barH-2, 3);
+  fill(255); textSize(10); textAlign(CENTER,TOP); text(getCatsName(), baseX + barW/2, y + barH + 4);
+  // dogs
+  const xDog = baseX + barW + spacing;
+  stroke(0,0,0,150); strokeWeight(1); fill(255,140,100); rect(xDog, y, barW, barH, 4);
+  noStroke(); fill(220,90,40); rect(xDog + 1, y + 1, (barW-2) * pctDog, barH-2, 3);
+  fill(255); textSize(10); textAlign(CENTER,TOP); text(getDogsName(), xDog + barW/2, y + barH + 4);
+  // birds
+  const xBird = xDog + barW + spacing;
+  stroke(0,0,0,150); strokeWeight(1); fill(150,210,120); rect(xBird, y, barW, barH, 4);
+  noStroke(); fill(60,180,80); rect(xBird + 1, y + 1, (barW-2) * pctBird, barH-2, 3);
+  fill(255); textSize(10); textAlign(CENTER,TOP); text('Calopsitas', xBird + barW/2, y + barH + 4);
+  // fish
+  const xFish = xBird + barW + spacing;
+  stroke(0,0,0,150); strokeWeight(1); fill(120,180,220); rect(xFish, y, barW, barH, 4);
+  noStroke(); fill(40,140,200); rect(xFish + 1, y + 1, (barW-2) * pctFish, barH-2, 3);
+  fill(255); textSize(10); textAlign(CENTER,TOP); text('Peixes', xFish + barW/2, y + barH + 4);
   pop();
 }
 
@@ -520,6 +638,17 @@ function updateEntities(){
   for(const c of cats){ if(c.hp<=0) continue;
     // expire temporary dmg/speed buffs
     if(c.buffUntil && now > c.buffUntil){ c.dmgMult = 1; c.speedMult = 1; c.buffUntil = 0; }
+      // expire speed boost marker (from dash) if present
+      if(c._speedBuffUntil && now > c._speedBuffUntil){ if(typeof c._baseMoveSpeed === 'number') c.moveSpeed = c._baseMoveSpeed; c._speedBuffUntil = 0; }
+      // berserk periodic HP drain and revert
+      if(c._berserkUntil){
+        if(now > c._berserkUntil){ c.dmgMult = 1; c._berserkUntil = 0; delete c._berserkHpCostPerSec; delete c._lastBerserkTick; }
+        else {
+          const last = c._lastBerserkTick || now;
+          const elapsed = now - last;
+          if(elapsed >= 1000){ const secs = Math.floor(elapsed/1000); c.hp = Math.max(0, c.hp - secs * (c._berserkHpCostPerSec || 1)); c._lastBerserkTick = last + secs*1000; }
+        }
+      }
     // expire temporary maxHp buffs (revert to base maxHp)
     if(c._maxHpBuffUntil && now > c._maxHpBuffUntil){
       // revert to base maxHp (if stored) and clamp current hp
@@ -566,7 +695,7 @@ function updateEntities(){
     }
     // if not fleeing/hidden, find nearest enemy to engage
     if(!c.hidden && c.hp>0 && c.state !== 'flee'){
-      const enemies = dogs.filter(d=>d.hp>0 && !d.hidden);
+      const enemies = livingEnemiesOf(c);
       if(enemies.length){ // pick nearest
         let target = enemies[0]; let bd = dist(c.x,c.y,target.x,target.y);
         for(const e of enemies){ const dd = dist(c.x,c.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
@@ -591,6 +720,8 @@ function updateEntities(){
   // process birds (simple AI: allied to cats, attack dogs)
   for(const b of birds){ if(b.hp<=0) continue;
     if(b.buffUntil && now > b.buffUntil){ b.dmgMult = 1; b.speedMult = 1; b.buffUntil = 0; }
+  if(b._speedBuffUntil && now > b._speedBuffUntil){ if(typeof b._baseMoveSpeed === 'number') b.moveSpeed = b._baseMoveSpeed; b._speedBuffUntil = 0; }
+  if(b._berserkUntil){ if(now > b._berserkUntil){ b.dmgMult = 1; b._berserkUntil = 0; delete b._berserkHpCostPerSec; delete b._lastBerserkTick; } else { const last = b._lastBerserkTick || now; const elapsed = now - last; if(elapsed >= 1000){ const secs = Math.floor(elapsed/1000); b.hp = Math.max(0, b.hp - secs * (b._berserkHpCostPerSec || 1)); b._lastBerserkTick = last + secs*1000; } } }
     if(b._maxHpBuffUntil && now > b._maxHpBuffUntil){ if(typeof b._maxHpBase === 'number'){ b.maxHp = b._maxHpBase; } else if(b._maxHpBuff){ b.maxHp = Math.max(1, b.maxHp - (b._maxHpBuff || 0)); } b._maxHpBuff = 0; b._maxHpBuffUntil = 0; delete b._maxHpBase; if(b.hp > b.maxHp) b.hp = b.maxHp; }
     if(b.hidden && now > b.hideUntil){ b.hidden = false; b.isRegenerating = false; if(b._savedRadius){ b.radius = b._savedRadius; delete b._savedRadius; } }
     if(b.hidden){ if(!b.nextRegen) b.nextRegen = now + 300; if(!b.lastRegen) b.lastRegen = now; if(!b.regenPerSec) b.regenPerSec = random(3,6) * (b.hiddenRegenBonus || 1.0); b.isRegenerating = true; if(now >= b.nextRegen){ const dt = now - b.lastRegen; const gained = (b.regenPerSec) * (dt/1000); b.hp = Math.min(b.maxHp, b.hp + gained); b.lastRegen = now; b.nextRegen = now + 300; if(b.hp >= b.maxHp) b.isRegenerating = false; } }
@@ -598,7 +729,7 @@ function updateEntities(){
     if(b.state === 'flee' && b.targetHide){ const ang = atan2(b.targetHide.y - b.y, b.targetHide.x - b.x); const ms = (b.moveSpeed || 1.4) * b.speedMult * (b.fleeSpeed || 2); b.x += cos(ang)*ms; b.y += sin(ang)*ms; if(dist(b.x,b.y,b.targetHide.x,b.targetHide.y) < (b.targetHide.radius || 22)){ b.hidden = true; b.hideUntil = now + random(1200,3600); b.state = 'hidden'; b.hideStart = now; b.nextRegen = now + 300; b.lastRegen = now; b.regenPerSec = random(4,8) * (b.hiddenRegenBonus || 1.0); b.isRegenerating = true; b._savedRadius = b.radius; b.radius = (b.radius || 20) * 1.3; } }
     // engage dogs
     if(!b.hidden && b.hp>0 && b.state !== 'flee'){
-      const enemies = dogs.filter(d=>d.hp>0 && !d.hidden);
+      const enemies = livingEnemiesOf(b);
       if(enemies.length){ let target = enemies[0]; let bd = dist(b.x,b.y,target.x,target.y); for(const e of enemies){ const dd = dist(b.x,b.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } } const ang = atan2(target.y - b.y, target.x - b.x); b.x += cos(ang)*0.9 * (b.moveSpeed || 2.0) * b.speedMult; b.y += sin(ang)*0.9 * (b.moveSpeed || 2.0) * b.speedMult; const attackRange = (b.radius || 20) + (target.radius || 32) + 6; if(bd < attackRange && now - b.lastAttack > (b.attackCooldown || 500)){ b.lastAttack = now; performAbility(b,target,birdAbilities); }
       }
     }
@@ -609,6 +740,8 @@ function updateEntities(){
       if(d.hp<=0) continue;
         // expire temporary dmg/speed buffs
         if(d.buffUntil && now > d.buffUntil){ d.dmgMult = 1; d.speedMult = 1; d.buffUntil = 0; }
+    if(d._speedBuffUntil && now > d._speedBuffUntil){ if(typeof d._baseMoveSpeed === 'number') d.moveSpeed = d._baseMoveSpeed; d._speedBuffUntil = 0; }
+    if(d._berserkUntil){ if(now > d._berserkUntil){ d.dmgMult = 1; d._berserkUntil = 0; delete d._berserkHpCostPerSec; delete d._lastBerserkTick; } else { const last = d._lastBerserkTick || now; const elapsed = now - last; if(elapsed >= 1000){ const secs = Math.floor(elapsed/1000); d.hp = Math.max(0, d.hp - secs * (d._berserkHpCostPerSec || 1)); d._lastBerserkTick = last + secs*1000; } } }
         // expire temporary maxHp buffs (revert to base maxHp)
         if(d._maxHpBuffUntil && now > d._maxHpBuffUntil){
           if(typeof d._maxHpBase === 'number'){
@@ -674,9 +807,19 @@ function updateEntities(){
 
       // active behavior: seek and attack cats
       if(!d.hidden && d.hp>0 && d.state !== 'flee'){
-        const enemies = cats.filter(c=>c.hp>0 && !c.hidden);
+        // compute enemies
+        const enemies = livingEnemiesOf(d);
         d.onBreak = (enemies.length === 0);
-        try{ if(window.DEBUG_DOGS && (!d._lastState || now - d._lastState > 1000)){ console.log('DOG STATE', 'pos', Math.round(d.x),Math.round(d.y), 'hp', Math.round(d.hp), 'state', d.state, 'hidden', d.hidden, 'enemies', enemies.length, 'onBreak', d.onBreak); d._lastState = now; } }catch(e){}
+        try{
+          if(window.DEBUG_DOGS && (!d._lastState || now - d._lastState > 1000)){
+            // verbose pool info for debugging
+            const pools = [...cats, ...dogs, ...birds, ...fish];
+            const poolSummary = pools.map(p=> p ? `${p.species||'?'}:${Math.round(p.hp||0)}${p.hidden?'/H':''}` : 'null');
+            const counts = { cats: cats.filter(x=>x.hp>0).length, dogs: dogs.filter(x=>x.hp>0).length, birds: birds.filter(x=>x.hp>0).length, fish: fish.filter(x=>x.hp>0).length };
+            console.log('DOG STATE', 'pos', Math.round(d.x),Math.round(d.y), 'hp', Math.round(d.hp), 'state', d.state, 'hidden', d.hidden, 'enemies', enemies.length, 'onBreak', d.onBreak, 'counts', counts, 'pool', poolSummary.join(', '));
+            d._lastState = now;
+          }
+        }catch(e){}
         if(enemies.length){
           let target = enemies[0]; let bd = dist(d.x,d.y,target.x,target.y);
           for(const e of enemies){ const dd = dist(d.x,d.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
@@ -715,10 +858,10 @@ function updateEntities(){
           }
         } else {
           // only search for hidden enemies when there are NO hidden cats currently regenerating
-          const anyHiddenCatsAreRegenerating = cats.some(c=> c.hidden && c.hp>0 && c.isRegenerating);
-          if(!anyHiddenCatsAreRegenerating){
-            const hiddenSpots = hideSpots.filter(s=> cats.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y)<s.radius));
-            if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = atan2(s.y - d.y, s.x - d.x); d.x += cos(ang)*0.8; d.y += sin(ang)*0.8; if(dist(d.x,d.y,s.x,s.y)<26){ for(const c of cats){ if(c.hidden && dist(c.x,c.y,s.x,s.y)<s.radius){ c.hidden=false; c.hp = Math.max(0,c.hp - floor(random(4,10))); spawnFloatingText(c.x,c.y-20,'!','rgba(255,0,0,0.9)'); } } } 
+          const anyHiddenAreRegenerating = [...cats, ...dogs, ...birds, ...fish].some(c=> c.hidden && c.hp>0 && c.isRegenerating);
+          if(!anyHiddenAreRegenerating){
+            const hiddenSpots = hideSpots.filter(s=> [...cats, ...dogs, ...birds, ...fish].some(c=> c.hidden && dist(c.x,c.y,s.x,s.y)<s.radius));
+            if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = atan2(s.y - d.y, s.x - d.x); d.x += cos(ang)*0.8; d.y += sin(ang)*0.8; if(dist(d.x,d.y,s.x,s.y)<26){ for(const ent of [...cats, ...dogs, ...birds, ...fish]){ if(ent && ent.hidden && dist(ent.x,ent.y,s.x,s.y)<s.radius){ ent.hidden=false; ent.hp = Math.max(0,ent.hp - floor(random(4,10))); spawnFloatingText(ent.x,ent.y-20,'!','rgba(255,0,0,0.9)'); } } } 
               try{ if(window.DEBUG_DOGS) console.log('DOG searching hidden at spot', Math.round(s.x), Math.round(s.y)); }catch(e){}
             } else {
               try{ if(window.DEBUG_DOGS) console.log('DOG idle: no hidden spots with cats'); }catch(e){}
@@ -733,20 +876,22 @@ function updateEntities(){
   // process fish (allied to dogs, attack cats)
   for(const f of fish){ if(f.hp<=0) continue;
     if(f.buffUntil && now > f.buffUntil){ f.dmgMult = 1; f.speedMult = 1; f.buffUntil = 0; }
+  if(f._speedBuffUntil && now > f._speedBuffUntil){ if(typeof f._baseMoveSpeed === 'number') f.moveSpeed = f._baseMoveSpeed; f._speedBuffUntil = 0; }
+  if(f._berserkUntil){ if(now > f._berserkUntil){ f.dmgMult = 1; f._berserkUntil = 0; delete f._berserkHpCostPerSec; delete f._lastBerserkTick; } else { const last = f._lastBerserkTick || now; const elapsed = now - last; if(elapsed >= 1000){ const secs = Math.floor(elapsed/1000); f.hp = Math.max(0, f.hp - secs * (f._berserkHpCostPerSec || 1)); f._lastBerserkTick = last + secs*1000; } } }
     if(f._maxHpBuffUntil && now > f._maxHpBuffUntil){ if(typeof f._maxHpBase === 'number'){ f.maxHp = f._maxHpBase; } else if(f._maxHpBuff){ f.maxHp = Math.max(1, f.maxHp - (f._maxHpBuff || 0)); } f._maxHpBuff = 0; f._maxHpBuffUntil = 0; delete f._maxHpBase; if(f.hp > f.maxHp) f.hp = f.maxHp; }
     if(f.hidden && now > f.hideUntil){ f.hidden = false; f.isRegenerating = false; if(f._savedRadius){ f.radius = f._savedRadius; delete f._savedRadius; } }
     if(f.hidden){ if(!f.nextRegen) f.nextRegen = now + 300; if(!f.lastRegen) f.lastRegen = now; if(!f.regenPerSec) f.regenPerSec = random(2,5) * (f.hiddenRegenBonus || 1.0); f.isRegenerating = true; if(now >= f.nextRegen){ const dt = now - f.lastRegen; const gained = (f.regenPerSec) * (dt/1000); f.hp = Math.min(f.maxHp, f.hp + gained); f.lastRegen = now; f.nextRegen = now + 300; if(f.hp >= f.maxHp) f.isRegenerating = false; } }
     const fleeThresholdF = 0.18 * f.maxHp; if(!f.hidden && f.hp > 0 && f.hp <= fleeThresholdF){ f.state='flee'; f.targetHide = safestHide(f.x,f.y, cats); f.fleeSpeed = random(1.2,2.0); }
     if(f.state === 'flee' && f.targetHide){ const ang = atan2(f.targetHide.y - f.y, f.targetHide.x - f.x); const ms = (f.moveSpeed || 1.2) * f.speedMult * (f.fleeSpeed || 2); f.x += cos(ang)*ms; f.y += sin(ang)*ms; if(dist(f.x,f.y,f.targetHide.x,f.targetHide.y) < (f.targetHide.radius || 22)){ f.hidden = true; f.hideUntil = now + random(1000,3000); f.state = 'hidden'; f.hideStart = now; f.nextRegen = now + 300; f.lastRegen = now; f.regenPerSec = random(3,7) * (f.hiddenRegenBonus || 1.0); f.isRegenerating = true; f._savedRadius = f.radius; f.radius = (f.radius || 22) * 1.2; } }
-    // engage cats
+    // engage enemies (any species != fish)
     if(!f.hidden && f.hp>0 && f.state !== 'flee'){
-      const enemies = cats.filter(c=>c.hp>0 && !c.hidden);
+      const enemies = livingEnemiesOf(f);
       if(enemies.length){ let target = enemies[0]; let bd = dist(f.x,f.y,target.x,target.y); for(const e of enemies){ const dd = dist(f.x,f.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } } const ang = atan2(target.y - f.y, target.x - f.x); f.x += cos(ang)*0.6 * (f.moveSpeed || 1.2) * f.speedMult; f.y += sin(ang)*0.6 * (f.moveSpeed || 1.2) * f.speedMult; const attackRange = (f.radius || 22) + (target.radius || 26) + 6; if(bd < attackRange && now - f.lastAttack > (f.attackCooldown || 600)){ f.lastAttack = now; performAbility(f,target,fishAbilities); }
       }
     }
   }
   // separation: avoid overlapping sprites (only for visible, alive entities)
-  const all = [...cats, ...dogs];
+  const all = [...cats, ...dogs, ...birds, ...fish];
   for(let i=0;i<all.length;i++){
     for(let j=i+1;j<all.length;j++){
       const a = all[i], b = all[j];
@@ -803,7 +948,14 @@ function updateEntities(){
       let minDE = 1e9;
       for(const e of validEnemies){ const de = dist(s.x,s.y,e.x,e.y); if(de < minDE) minDE = de; }
       const distToSelf = dist(x,y,s.x,s.y);
-      const score = minDE - 0.35 * distToSelf;
+      // prefer certain hide types depending on species: cats -> tree, dogs/fish -> rock
+      let typeBonus = 0;
+      try{
+        const sp = avoidEntity && avoidEntity.species ? avoidEntity.species : null;
+        if(sp === 'cat' && s.type === 'tree') typeBonus = 60;
+        else if((sp === 'dog' || sp === 'fish') && s.type === 'rock') typeBonus = 60;
+      }catch(e){}
+      const score = minDE - 0.35 * distToSelf + typeBonus;
       if(score > bestScore){ bestScore = score; best = s; }
     }
     return best;
@@ -858,6 +1010,47 @@ function performAbility(user, target, pool){
     user.speedMult = 1 + chosen.amount;
     user.buffUntil = millis() + chosen.duration;
     spawnFloatingText(user.x, user.y - 30, 'Speed up', '#66ff88');
+    if(window.catDogAudio) window.catDogAudio.playBuff();
+  } else if(chosen.type === 'dash'){
+    // immediate damage + short speed burst
+    const dmg = chosen.damage || 10;
+    target.hp = Math.max(0, target.hp - dmg);
+    spawnFloatingText(target.x, target.y - 30, '-' + dmg, '#ff6666');
+    spawnConfetti(target.x, target.y, 6);
+    if(window.catDogAudio) window.catDogAudio.playImpact();
+    // apply speed buff marker
+    if(typeof user._baseMoveSpeed !== 'number') user._baseMoveSpeed = user.moveSpeed;
+    user.moveSpeed = (user._baseMoveSpeed || user.moveSpeed) * (1 + (chosen.speedBoost || 0.5));
+    user._speedBuffUntil = millis() + (chosen.duration || 600);
+    // knockback on target
+    const ang2 = atan2(target.y - user.y, target.x - user.x);
+    target.x += cos(ang2) * 8; target.y += sin(ang2) * 8;
+  } else if(chosen.type === 'berserk'){
+    // increase damage multiplier temporarily, but drain HP per second
+    user.dmgMult = 1 + (chosen.amount || 1.0);
+    user._berserkUntil = millis() + (chosen.duration || 7000);
+    user._berserkHpCostPerSec = chosen.selfHpCostPerSec || 1;
+    user._lastBerserkTick = millis();
+    spawnFloatingText(user.x, user.y - 30, 'Berserk!', '#ff9966');
+    if(window.catDogAudio) window.catDogAudio.playBuff();
+  }
+  else if(chosen.type === 'dash'){
+    const dmg = chosen.damage || 10;
+    target.hp = Math.max(0, target.hp - dmg);
+    spawnFloatingText(target.x, target.y - 30, '-' + dmg, '#ff6666');
+    spawnConfetti(target.x, target.y, 6);
+    if(window.catDogAudio) window.catDogAudio.playImpact();
+    if(typeof user._baseMoveSpeed !== 'number') user._baseMoveSpeed = user.moveSpeed;
+    user.moveSpeed = (user._baseMoveSpeed || user.moveSpeed) * (1 + (chosen.speedBoost || 0.5));
+    user._speedBuffUntil = millis() + (chosen.duration || 600);
+    const ang2 = atan2(target.y - user.y, target.x - user.x);
+    target.x += cos(ang2) * 8; target.y += sin(ang2) * 8;
+  } else if(chosen.type === 'berserk'){
+    user.dmgMult = 1 + (chosen.amount || 1.0);
+    user._berserkUntil = millis() + (chosen.duration || 7000);
+    user._berserkHpCostPerSec = chosen.selfHpCostPerSec || 1;
+    user._lastBerserkTick = millis();
+    spawnFloatingText(user.x, user.y - 30, 'Berserk!', '#ff9966');
     if(window.catDogAudio) window.catDogAudio.playBuff();
   }
 }
