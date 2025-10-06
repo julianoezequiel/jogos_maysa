@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200" aria-label="Ilustração detalhada de um peixe">
+  <defs>
+    <linearGradient id="fishGrad" x1="0" x2="1">
+      <stop offset="0%" stop-color="#7fe0ff" />
+      <stop offset="100%" stop-color="#3aa6d8" />
+    </linearGradient>
+  </defs>
+  <g>
+    <ellipse cx="180" cy="100" rx="140" ry="60" fill="url(#fishGrad)" />
+    <polygon points="320,100 380,70 380,130" fill="#3aa6d8" />
+    <circle cx="120" cy="90" r="18" fill="#1b1b1b" />
+    <circle cx="115" cy="84" r="4" fill="#fff" />
+    <path d="M220 120 Q240 140 260 120" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.25" />
+  </g>
+</svg>

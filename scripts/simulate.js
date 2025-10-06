@@ -2,7 +2,7 @@
 // Usage: node simulate.js [nCats] [nDogs] [runs]
 
 const args = process.argv.slice(2);
-const N_CATS = parseInt(args[0]) || 6;
+const N_CATS = parseInt(args[0]) || 10;
 const N_DOGS = parseInt(args[1]) || 10;
 let N_BIRDS = Math.floor(N_CATS * 0.4);
 let N_FISH = Math.floor(N_DOGS * 0.4);
@@ -16,22 +16,21 @@ function dist(a,b,c,d){ const dx = a-c, dy = b-d; return Math.sqrt(dx*dx+dy*dy);
 function nowMs(ticks, tickMs){ return ticks * tickMs; }
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 
-const catAbilities = [
-  // increased scratch damage slightly for balance (was 8-14)
+// Prefer species module abilities when available (loader exposes them in Node or browser envs)
+const catAbilities = (typeof global !== 'undefined' && global.catAbilities) ? global.catAbilities : [
   {name:'Scratch', type:'damage', min:9, max:16, prob:0.6},
   {name:'Purr Heal', type:'heal', min:6, max:12, prob:0.2},
   {name:'Feline Fury', type:'buffDamage', amount:0.6, duration:5000, prob:0.15},
   {name:'Nine Lives', type:'buffMaxHp', amount:24, duration:8000, prob:0.05}
 ];
-const dogAbilities = [
-  // slightly increased bite damage to improve parity vs cats
+const dogAbilities = (typeof global !== 'undefined' && global.dogAbilities) ? global.dogAbilities : [
   {name:'Bite', type:'damage', min:10, max:16, prob:0.6},
   {name:'Growl Heal', type:'heal', min:5, max:10, prob:0.18},
   {name:'Alpha Roar', type:'buffDamage', amount:0.5, duration:6000, prob:0.16},
   {name:'Tough Hide', type:'buffMaxHp', amount:20, duration:8000, prob:0.06}
 ];
 
-const birdAbilities = [
+const birdAbilities = (typeof global !== 'undefined' && global.birdAbilities) ? global.birdAbilities : [
   {name:'Peck', type:'damage', min:6, max:12, prob:0.6},
   {name:'Feather Mend', type:'heal', min:4, max:8, prob:0.15},
   {name:'Wing Gust', type:'buffSpeed', amount:0.5, duration:2500, prob:0.15},
@@ -39,7 +38,7 @@ const birdAbilities = [
   {name:'Shadow Dash', type:'dash', damage:14, speedBoost:0.6, duration:600, prob:0.08}
 ];
 
-const fishAbilities = [
+const fishAbilities = (typeof global !== 'undefined' && global.fishAbilities) ? global.fishAbilities : [
   {name:'Bite', type:'damage', min:7, max:11, prob:0.6},
   {name:'Slime Heal', type:'heal', min:3, max:6, prob:0.15},
   {name:'Slippery', type:'buffSpeed', amount:0.35, duration:2000, prob:0.1},
@@ -228,15 +227,91 @@ function updateEntitiesTick(state, tickMs){
         }
       }
       } else {
-  // only search for hidden enemies when there are NO hidden enemies currently regenerating
-  const anyHiddenDogsAreRegenerating = dogs.some(d=> d.hidden && d.hp>0 && d.isRegenerating);
-  if(!anyHiddenDogsAreRegenerating){
-          const hiddenSpots = hideSpots.filter(s=> dogs.some(d=> d.hidden && dist(d.x,d.y,s.x,s.y)<30));
-          if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = Math.atan2(s.y - c.y, s.x - c.x); c.x += Math.cos(ang)*1.7; c.y += Math.sin(ang)*1.7; if(dist(c.x,c.y,s.x,s.y) < ((s.radius||22) + (c.radius||26) - 6)){ for(const d of dogs){ if(d.hidden && dist(d.x,d.y,s.x,s.y)<40){ d.hidden=false; d.isRegenerating = false; if(d._savedRadius){ d.radius = d._savedRadius; delete d._savedRadius; } d.hp = Math.max(0,d.hp- Math.floor(rand(4,10))); } } } }
-        }
+        // If there are no visible enemies, search for hidden enemies' spots.
+        // Consider all enemy species (dogs, birds, fish) instead of only dogs so
+        // cats will attempt to reveal any hidden adversary and avoid a stalemate
+        // when multiple species are present and hiding/regenerating.
+        const enemyListForCats = [...dogs, ...birds, ...fish];
+  // use the hide spot radius (with small slack) instead of a hardcoded 30px
+  const hiddenSpots = hideSpots.filter(s=> enemyListForCats.some(d=> d.hidden && dist(d.x,d.y,s.x,s.y) < ((s.radius || 30) + 6)));
+        if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = Math.atan2(s.y - c.y, s.x - c.x); c.x += Math.cos(ang)*1.7; c.y += Math.sin(ang)*1.7; if(dist(c.x,c.y,s.x,s.y) < ((s.radius||22) + (c.radius||26) - 6)){ for(const d of enemyListForCats){ if(d.hidden && dist(d.x,d.y,s.x,s.y)<40){ d.hidden=false; d.isRegenerating = false; if(d._savedRadius){ d.radius = d._savedRadius; delete d._savedRadius; } d.hp = Math.max(0,d.hp- Math.floor(rand(4,10))); } } } }
       }
     }
   }
+  // Debug: detect potential stalemate when exactly two species remain but one has no visible members
+  try{
+    if(!state._loggedStalemate){
+      const countsVisible = {
+        cat: cats.filter(x=>x.hp>0 && !x.hidden).length,
+        dog: dogs.filter(x=>x.hp>0 && !x.hidden).length,
+        bird: birds.filter(x=>x.hp>0 && !x.hidden).length,
+        fish: fish.filter(x=>x.hp>0 && !x.hidden).length
+      };
+      const countsAlive = {
+        cat: cats.filter(x=>x.hp>0).length,
+        dog: dogs.filter(x=>x.hp>0).length,
+        bird: birds.filter(x=>x.hp>0).length,
+        fish: fish.filter(x=>x.hp>0).length
+      };
+      const livingSpecies = Object.keys(countsAlive).filter(k=>countsAlive[k] > 0);
+      if(livingSpecies.length === 2){
+        // if any of the two has zero visible members, record snapshot for inspection
+        const oneHasZeroVisible = livingSpecies.some(k => countsVisible[k] === 0);
+        if(oneHasZeroVisible){
+          state._loggedStalemate = true;
+          console.log('\n--- STALEMATE SNAPSHOT DETECTED ---');
+          console.log('now=', now, 'livingSpecies=', livingSpecies, 'visibleCounts=', countsVisible, 'aliveCounts=', countsAlive);
+          const dump = (arr) => arr.map(e => ({species: e.species, hp: Math.round(e.hp), hidden: !!e.hidden, x: Math.round(e.x), y: Math.round(e.y)}));
+          console.log('cats:', JSON.stringify(dump(cats)));
+          console.log('dogs:', JSON.stringify(dump(dogs)));
+          console.log('birds:', JSON.stringify(dump(birds)));
+          console.log('fish:', JSON.stringify(dump(fish)));
+          console.log('hideSpots:', JSON.stringify(hideSpots.map(s => ({x: Math.round(s.x), y: Math.round(s.y), r: s.radius, type: s.type}))));
+          console.log('--- END SNAPSHOT ---\n');
+        }
+      }
+    }
+  }catch(e){ /* ignore debug errors */ }
+  // Stalemate breaker: if exactly two species remain and one side has zero visible members,
+  // reveal one hidden member from the side that is fully hidden to unblock the match.
+  try{
+    const countsVisible2 = {
+      cat: cats.filter(x=>x.hp>0 && !x.hidden).length,
+      dog: dogs.filter(x=>x.hp>0 && !x.hidden).length,
+      bird: birds.filter(x=>x.hp>0 && !x.hidden).length,
+      fish: fish.filter(x=>x.hp>0 && !x.hidden).length
+    };
+    const countsAlive2 = {
+      cat: cats.filter(x=>x.hp>0).length,
+      dog: dogs.filter(x=>x.hp>0).length,
+      bird: birds.filter(x=>x.hp>0).length,
+      fish: fish.filter(x=>x.hp>0).length
+    };
+    const livingSpecies2 = Object.keys(countsAlive2).filter(k=>countsAlive2[k] > 0);
+    if(livingSpecies2.length === 2){
+      const hiddenSide = livingSpecies2.find(k => countsVisible2[k] === 0);
+      if(hiddenSide){
+        // pick the array and reveal the first hidden member (if any)
+        const poolMap = { cat: cats, dog: dogs, bird: birds, fish: fish };
+        const pool = poolMap[hiddenSide] || [];
+        const hiddenMember = pool.find(p => p.hp>0 && p.hidden);
+        if(hiddenMember){
+          hiddenMember.hidden = false;
+          hiddenMember.isRegenerating = false;
+          if(hiddenMember._savedRadius){ hiddenMember.radius = hiddenMember._savedRadius; delete hiddenMember._savedRadius; }
+          // slightly reduce HP to simulate being surprised and make it detectable
+          hiddenMember.hp = Math.max(1, hiddenMember.hp - Math.floor(rand(4,10)));
+          // nudge position slightly toward center to increase chance of detection
+          hiddenMember.x += (380 - hiddenMember.x) * 0.08;
+          hiddenMember.y += (240 - hiddenMember.y) * 0.08;
+          // mark that we applied a breaker so we don't spam it
+          state._stalemateBreakerApplied = (state._stalemateBreakerApplied || 0) + 1;
+          // also log briefly for reproducibility
+          console.log('--- STALEMATE BREAKER APPLIED ---', 'side=', hiddenSide, 'now=', now, 'breakerCount=', state._stalemateBreakerApplied);
+        }
+      }
+    }
+  }catch(e){ }
   // dogs
   for(const d of dogs){ if(d.hp<=0) continue;
     if(d.buffUntil && now > d.buffUntil){ d.dmgMult = 1; d.buffUntil = 0; }
@@ -300,11 +375,11 @@ function updateEntitiesTick(state, tickMs){
     }
   }
       } else {
-  const anyHiddenCatsAreRegenerating = cats.some(c=> c.hidden && c.hp>0 && c.isRegenerating);
-  if(!anyHiddenCatsAreRegenerating){
-          const hiddenSpots = hideSpots.filter(s=> cats.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y)<30));
-          if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = Math.atan2(s.y - d.y, s.x - d.x); d.x += Math.cos(ang)*1.6; d.y += Math.sin(ang)*1.6; if(dist(d.x,d.y,s.x,s.y) < ((s.radius||22) + (d.radius||34) - 6)){ for(const c of cats){ if(c.hidden && dist(c.x,c.y,s.x,s.y)<40){ c.hidden=false; c.isRegenerating = false; if(c._savedRadius){ c.radius = c._savedRadius; delete c._savedRadius; } c.hp = Math.max(0,c.hp - Math.floor(rand(4,10))); } } } }
-        }
+        // Dogs should also try to reveal any hidden enemies, not only cats.
+        const enemyListForDogs = [...cats, ...birds, ...fish];
+  // use the hide spot radius (with small slack) instead of a hardcoded 30px
+  const hiddenSpots = hideSpots.filter(s=> enemyListForDogs.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y) < ((s.radius || 30) + 6)));
+        if(hiddenSpots.length){ const s = hiddenSpots[0]; const ang = Math.atan2(s.y - d.y, s.x - d.x); d.x += Math.cos(ang)*1.6; d.y += Math.sin(ang)*1.6; if(dist(d.x,d.y,s.x,s.y) < ((s.radius||22) + (d.radius||34) - 6)){ for(const c of enemyListForDogs){ if(c.hidden && dist(c.x,c.y,s.x,s.y)<40){ c.hidden=false; c.isRegenerating = false; if(c._savedRadius){ c.radius = c._savedRadius; delete c._savedRadius; } c.hp = Math.max(0,c.hp - Math.floor(rand(4,10))); } } } }
       }
     }
   }

@@ -3,40 +3,50 @@
 // Grid search for damage multipliers (Cat vs Dog)
 // Usage: node grid_search.js [nCats] [nDogs] [runsPerCombo]
 const args = process.argv.slice(2);
-const N_CATS = parseInt(args[0]) || 6;
-const N_DOGS = parseInt(args[1]) || 10;
-const RUNS_PER = parseInt(args[2]) || 50;
+// Always use fixed counts for balancing: 10 individuals per species.
+// Allow only runsPer as optional argument.
+const FIXED_PER_SPECIES = 10;
+const RUNS_PER = parseInt(args[0]) || 50;
 
 function rand(a,b){ return Math.random() * (b - a) + a; }
 function irand(a,b){ return Math.floor(rand(a,b)); }
 function dist(a,b,c,d){ const dx = a-c, dy = b-d; return Math.sqrt(dx*dx+dy*dy); }
 
-// Abilities
-const catAbilities = [
+// Abilities - prefer species loader exports when available
+const catAbilities = (typeof global !== 'undefined' && global.catAbilities) ? global.catAbilities : [
   {name:'Scratch', type:'damage', min:8, max:14, prob:0.6},
   {name:'Purr Heal', type:'heal', min:6, max:12, prob:0.2},
   {name:'Feline Fury', type:'buffDamage', amount:0.6, duration:5000, prob:0.15},
   {name:'Nine Lives', type:'buffMaxHp', amount:24, duration:8000, prob:0.05}
 ];
-const dogAbilities = [
+const dogAbilities = (typeof global !== 'undefined' && global.dogAbilities) ? global.dogAbilities : [
   {name:'Bite', type:'damage', min:9, max:15, prob:0.6},
   {name:'Growl Heal', type:'heal', min:5, max:10, prob:0.18},
   {name:'Alpha Roar', type:'buffDamage', amount:0.5, duration:6000, prob:0.16},
   {name:'Tough Hide', type:'buffMaxHp', amount:20, duration:8000, prob:0.06}
 ];
 
-const birdAbilities = [
+const birdAbilities = (typeof global !== 'undefined' && global.birdAbilities) ? global.birdAbilities : [
   {name:'Peck', type:'damage', min:6, max:12, prob:0.6},
   {name:'Feather Mend', type:'heal', min:4, max:8, prob:0.15},
   {name:'Wing Gust', type:'buffSpeed', amount:0.5, duration:2500, prob:0.15},
   {name:'Flock Cry', type:'buffDamage', amount:0.3, duration:3500, prob:0.1}
 ];
 
-const fishAbilities = [
+const fishAbilities = (typeof global !== 'undefined' && global.fishAbilities) ? global.fishAbilities : [
   {name:'Bite', type:'damage', min:7, max:11, prob:0.6},
   {name:'Slime Heal', type:'heal', min:3, max:6, prob:0.15},
   {name:'Slippery', type:'buffSpeed', amount:0.35, duration:2000, prob:0.1},
   {name:'Water Surge', type:'buffMaxHp', amount:12, duration:7000, prob:0.15}
+];
+
+// capybara abilities (included in grid search)
+const capyAbilities = (typeof global !== 'undefined' && global.capyAbilities) ? global.capyAbilities : [
+  { name: 'Chomp', type: 'damage', min: 10, max: 18, prob: 0.62 },
+  { name: 'Capy Calm', type: 'heal', min: 8, max: 14, prob: 0.20 },
+  { name: 'Mud Shield', type: 'buffMaxHp', amount: 20, duration: 8000, prob: 0.12 },
+  { name: 'Slide', type: 'dash', damage: 12, speedBoost: 0.5, duration: 600, prob: 0.08 },
+  { name: 'Serene Aura', type: 'buffDamage', amount: 0.35, duration: 5000, prob: 0.06 }
 ];
 
 function pickByProb(pool){
@@ -58,6 +68,9 @@ function performAbility(user, target, chosen, now){
   } else if(chosen.type === 'buffDamage'){
     user.dmgMult = 1 + chosen.amount;
     user.buffUntil = now + chosen.duration;
+  } else if(chosen.type === 'buffSpeed'){
+    user.speedMult = 1 + (chosen.amount || 0);
+    user.buffUntil = now + (chosen.duration || 3000);
   } else if(chosen.type === 'buffMaxHp'){
     if(!user._maxHpBase) user._maxHpBase = user.maxHp;
     const prev = user._maxHpBuff || 0;
@@ -96,7 +109,7 @@ function safestHide(x,y,enemies, hideSpots){
 }
 
 function initMatch(nCats,nDogs, catMult, dogMult){
-  const cats=[]; const dogs=[]; const birds=[]; const fish=[]; const hideSpots=[];
+  const cats=[]; const dogs=[]; const birds=[]; const fish=[]; const capy=[]; const hideSpots=[];
   const spots = 4 + Math.floor(rand(0,3));
   // rebalance tree vs rock based on allied counts (cats+birds vs dogs+fish)
   const alliedCats = nCats + Math.floor(nCats * 0.4);
@@ -129,17 +142,22 @@ function initMatch(nCats,nDogs, catMult, dogMult){
       nextRegen:0, lastRegen:0, regenPerSec:0, walkLastRegen:0
     });
   }
-  // spawn birds and fish scaled to team sizes
-  const nBirds = Math.floor(nCats * 0.4);
+  // spawn birds, fish and capy as fixed counts (balancing assumes fixed individuals)
+  const nBirds = nCats; // 1:1 for birds (each cat has one bird ally for balance runs)
   for(let b=0;b<nBirds;b++) birds.push({ x: rand(60,760/2-30), y: rand(60,420-60), hp:60, maxHp:60, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:20, moveSpeed:2.2, attackCooldown:400, speciesDamageMultiplier:0.9, hiddenRegenBonus:1.1, walkRegenPerSec:0, state:null, targetHide:null, fleeSpeed:0, nextRegen:0, lastRegen:0, regenPerSec:0 });
-  const nFish = Math.floor(nDogs * 0.4);
+  const nFish = nDogs; // 1:1 for fish
   for(let f=0; f<nFish; f++) fish.push({ x: rand(760/2+30,760-60), y: rand(60,420-60), hp:80, maxHp:80, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:22, moveSpeed:1.2, attackCooldown:600, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec:0, state:null, targetHide:null, fleeSpeed:0, nextRegen:0, lastRegen:0, regenPerSec:0 });
-  return {cats,dogs,birds,fish,hideSpots};
+  // capybaras: spawn same fixed number across balance runs
+  const nCapy = nCats; // 1 capy per cat in balancer (keeps fixed per-species counts)
+  for(let cpi=0;cpi<nCapy;cpi++) capy.push({ x: rand(60,760/2-30), y: rand(60,420-60), hp:100, maxHp:100, dmgMult:1, buffUntil:0, lastAttack:0, hidden:false, hideUntil:0, radius:28, moveSpeed:1.2, attackCooldown:650, speciesDamageMultiplier:1.0, hiddenRegenBonus:1.0, walkRegenPerSec:0, state:null, targetHide:null, fleeSpeed:0, nextRegen:0, lastRegen:0, regenPerSec:0 });
+  return {cats,dogs,birds,fish,capy,hideSpots};
 }
 
 function updateEntitiesTick(state){
   const now = state.now;
   const cats = state.cats; const dogs = state.dogs; const birds = state.birds || []; const fish = state.fish || []; const hideSpots = state.hideSpots;
+
+  const capy = state.capy || [];
 
   for(const c of cats){
     if(c.hp<=0) continue;
@@ -191,7 +209,7 @@ function updateEntitiesTick(state){
           c.lastAttack = now; const chosen = pickByProb(catAbilities); performAbility(c,target,chosen,now);
         }
       } else {
-        const hiddenSpots = hideSpots.filter(s=> dogs.some(d=> d.hidden && dist(d.x,d.y,s.x,s.y)<30));
+  const hiddenSpots = hideSpots.filter(s=> dogs.some(d=> d.hidden && dist(d.x,d.y,s.x,s.y) < ((s.radius || 30) + 6)));
         if(hiddenSpots.length){
           const s = hiddenSpots[0];
           const ang = Math.atan2(s.y - c.y, s.x - c.x);
@@ -247,7 +265,7 @@ function updateEntitiesTick(state){
           d.lastAttack = now; const chosen = pickByProb(dogAbilities); performAbility(d,target,chosen,now);
         }
       } else {
-        const hiddenSpots = hideSpots.filter(s=> cats.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y)<30));
+  const hiddenSpots = hideSpots.filter(s=> cats.some(c=> c.hidden && dist(c.x,c.y,s.x,s.y) < ((s.radius || 30) + 6)));
         if(hiddenSpots.length){
           const s = hiddenSpots[0];
           const ang = Math.atan2(s.y - d.y, s.x - d.x);
@@ -317,13 +335,43 @@ function updateEntitiesTick(state){
       }
     }
   }
+
+  // capybaras: neutral allies (included in balancing). Simple behavior: prefer dogs but attack nearest.
+  for(const cp of capy){
+    if(cp.hp<=0) continue;
+    if(cp.buffUntil && now > cp.buffUntil){ cp.dmgMult = 1; cp.buffUntil = 0; }
+    if(cp._maxHpBuffUntil && now > cp._maxHpBuffUntil){ if(typeof cp._maxHpBase === 'number') cp.maxHp = cp._maxHpBase; else if(cp._maxHpBuff) cp.maxHp = Math.max(1, cp.maxHp - (cp._maxHpBuff || 0)); cp._maxHpBuff = 0; cp._maxHpBuffUntil = 0; delete cp._maxHpBase; if(cp.hp > cp.maxHp) cp.hp = cp.maxHp; }
+    if(cp.hidden && now > cp.hideUntil){ cp.hidden = false; }
+
+    if(cp.hidden){
+      if(!cp.nextRegen) cp.nextRegen = now + 300;
+      if(!cp.lastRegen) cp.lastRegen = now;
+      if(!cp.regenPerSec) cp.regenPerSec = rand(4,9) * (cp.hiddenRegenBonus || 1.0);
+      if(now >= cp.nextRegen){ const dt = now - cp.lastRegen; const gained = (cp.regenPerSec) * (dt/1000); cp.hp = Math.min(cp.maxHp, cp.hp + gained); cp.lastRegen = now; cp.nextRegen = now + 300; }
+    }
+
+    const fleeThreshold = 0.25 * cp.maxHp;
+    if(!cp.hidden && cp.hp > 0 && cp.hp <= fleeThreshold){ cp.state='flee'; cp.targetHide = safestHide(cp.x,cp.y, dogs, hideSpots); cp.fleeSpeed = rand(2,3); }
+
+    if(cp.state === 'flee' && cp.targetHide){ const ang = Math.atan2(cp.targetHide.y - cp.y, cp.targetHide.x - cp.x); const ms = (cp.moveSpeed || 1.2) * (cp.fleeSpeed || 2.0); cp.x += Math.cos(ang)*ms; cp.y += Math.sin(ang)*ms; if(dist(cp.x,cp.y,cp.targetHide.x,cp.targetHide.y) < 22){ cp.hidden = true; cp.hideUntil = now + rand(1200,3600); cp.state = 'hidden'; cp.hideStart = now; cp.nextRegen = now + 300; cp.lastRegen = now; cp.regenPerSec = rand(4,8) * (cp.hiddenRegenBonus || 1.0); } }
+
+    if(!cp.hidden && cp.hp>0 && cp.state !== 'flee'){
+      const pools = [...cats, ...dogs, ...birds, ...fish, ...capy];
+      const enemies = pools.filter(e=>e && e.hp>0 && !e.hidden && e !== cp);
+      if(enemies.length){ let target = enemies[0]; let bd = dist(cp.x,cp.y,target.x,target.y); for(const e of enemies){ const dd = dist(cp.x,cp.y,e.x,e.y); if(dd<bd){ bd=dd; target=e; } }
+        const ang = Math.atan2(target.y - cp.y, target.x - cp.x); cp.x += Math.cos(ang)*0.9; cp.y += Math.sin(ang)*0.9; if(bd < 72 && now - cp.lastAttack > (cp.attackCooldown || 650)){ cp.lastAttack = now; const chosen = pickByProb(capyAbilities); performAbility(cp,target,chosen,now); }
+      }
+    }
+  }
 }
 
-function runOneSimple(nCats,nDogs,catMult,dogMult){
+function runOneSimple(nCats,nDogs,catMult,dogMult, opts){
   const m = initMatch(nCats,nDogs,catMult,dogMult);
-  const cats = m.cats; const dogs = m.dogs; const birds = m.birds || []; const fish = m.fish || []; const hideSpots = m.hideSpots;
-  const state = {cats,dogs,birds,fish,hideSpots,now:0};
-  const tickMs = 200; const MAX_TICKS = 12000; let ticks=0;
+  const cats = m.cats; const dogs = m.dogs; const birds = m.birds || []; const fish = m.fish || []; const capy = m.capy || []; const hideSpots = m.hideSpots;
+  const state = {cats,dogs,birds,fish,capy,hideSpots,now:0};
+  const tickMs = (opts && opts.tickMs) || 200;
+  const MAX_TICKS = (opts && opts.MAX_TICKS) || 12000;
+  let ticks=0;
   while(true){
     if(ticks++ > MAX_TICKS) break;
     state.now += tickMs;
@@ -331,51 +379,128 @@ function runOneSimple(nCats,nDogs,catMult,dogMult){
     const ac = cats.filter(x=>x.hp>0).length;
     const ad = dogs.filter(x=>x.hp>0).length;
     const ab = birds.filter(x=>x.hp>0).length; const af = fish.filter(x=>x.hp>0).length;
-    const living = [ac>0, ad>0, ab>0, af>0].filter(Boolean).length;
+    const cpAlive = capy.filter(x=>x.hp>0).length;
+    const living = [ac>0, ad>0, ab>0, af>0, cpAlive>0].filter(Boolean).length;
     if(living <= 1) break;
   }
   const ac = cats.filter(x=>x.hp>0).length;
   const ad = dogs.filter(x=>x.hp>0).length;
   const ab = birds.filter(x=>x.hp>0).length; const af = fish.filter(x=>x.hp>0).length;
-  return {ac,ad,ab,af,ticks};
+  const cp = capy.filter(x=>x.hp>0).length;
+  // total HP per species (for tie-break)
+  const totalHp = {
+    cats: cats.reduce((s,e)=> s + Math.max(0, e.hp || 0), 0),
+    dogs: dogs.reduce((s,e)=> s + Math.max(0, e.hp || 0), 0),
+    birds: birds.reduce((s,e)=> s + Math.max(0, e.hp || 0), 0),
+    fish: fish.reduce((s,e)=> s + Math.max(0, e.hp || 0), 0),
+    capy: capy.reduce((s,e)=> s + Math.max(0, e.hp || 0), 0)
+  };
+  // determine winner by most alive; tie-break by total HP among tied species
+  const counts = [{name:'cats', n:ac}, {name:'dogs', n:ad}, {name:'birds', n:ab}, {name:'fish', n:af}, {name:'capy', n:cp}];
+  const maxN = Math.max(...counts.map(c=>c.n));
+  const candidates = counts.filter(c=> c.n === maxN && c.n > 0);
+  let winner = 'draw';
+  if(candidates.length === 1){ winner = candidates[0].name; }
+  else if(candidates.length > 1){
+    // tie-break by total HP
+    let best = null; let bestHp = -1; let tied = [];
+    for(const c of candidates){ const hp = totalHp[c.name]; if(hp > bestHp){ bestHp = hp; best = c.name; tied = [c.name]; } else if(hp === bestHp){ tied.push(c.name); } }
+    if(tied.length === 1) winner = best; else winner = 'draw';
+  }
+  return {ac,ad,ab,af,cp,ticks,winner,totalHp};
 }
 
 function runGrid(){
-  function linspace(a,b,n){ const out=[]; if(n<=1){ out.push(a); return out; } const step = (b-a)/(n-1); for(let i=0;i<n;i++) out.push(+(a + step*i).toFixed(4)); return out; }
-  // broader search: test dog multipliers 0.90..1.30 and cat multipliers 0.90..1.30 in 9 steps
-  const dogVals = linspace(0.90, 1.30, 9);
-  const catVals = linspace(0.90, 1.30, 9);
-  const results = [];
+  // capy-focused parameter grid
+  const chompMaxVals = [14, 18, 22];
+  const chompProbVals = [0.50, 0.62, 0.74];
+  const calmProbVals = [0.12, 0.20, 0.28];
+    const results = [];
+    const outCsv = [];
+    const header = 'chompMax,chompProb,calmProb,dogsW,catsW,birdsW,fishW,capyW,draws,avgCapyAlive,avgTicks,avgHpCats,avgHpDogs,avgHpBirds,avgHpFish,avgHpCapy';
 
-  console.log(`Grid search: Cats=${N_CATS}, Dogs=${N_DOGS}, runsPerCombo=${RUNS_PER}`);
+  console.log(`Capy-focused grid search: combos=${chompMaxVals.length * chompProbVals.length * calmProbVals.length}, FixedPerSpecies=${FIXED_PER_SPECIES}, runsPerCombo=${RUNS_PER}`);
 
-  for(const dv of dogVals){
-    for(const cv of catVals){
-      let catsW = 0, dogsW = 0, draws = 0, totalTicks = 0;
-      for(let r = 0; r < RUNS_PER; r++){
-        const res = runOneSimple(N_CATS, N_DOGS, cv, dv);
-        totalTicks += res.ticks;
-        if(res.ac > 0 && res.ad === 0) catsW++;
-        else if(res.ad > 0 && res.ac === 0) dogsW++;
-        else draws++;
+  // Save original capy ability template to restore after tests
+  const origChomp = Object.assign({}, (capyAbilities[0] || {}));
+  const origCalm = Object.assign({}, (capyAbilities[1] || {}));
+
+  for(const maxV of chompMaxVals){
+    for(const pV of chompProbVals){
+      for(const cV of calmProbVals){
+        // inject parameters into capyAbilities safely
+        if(!capyAbilities || capyAbilities.length === 0) {
+          console.warn('capyAbilities missing; skipping combo');
+          continue;
+        }
+        // backup current
+        const saved0 = Object.assign({}, capyAbilities[0]);
+        const saved1 = Object.assign({}, capyAbilities[1]);
+        try{
+          // set Chomp prob and max; ensure min <= max
+          capyAbilities[0].max = maxV;
+          if(typeof capyAbilities[0].min !== 'number' || capyAbilities[0].min > capyAbilities[0].max) capyAbilities[0].min = Math.max(1, capyAbilities[0].max - 6);
+          capyAbilities[0].prob = pV;
+          // set Capy Calm prob
+          if(capyAbilities[1]) capyAbilities[1].prob = cV;
+
+          // run runsPer and accumulate metrics
+          let wins = {cats:0,dogs:0,birds:0,fish:0,capy:0,draws:0};
+          let totalTicks = 0, capyAcc = 0;
+          const totalHpSums = {cats:0,dogs:0,birds:0,fish:0,capy:0};
+          for(let r=0;r<RUNS_PER;r++){
+            const res = runOneSimple(FIXED_PER_SPECIES, FIXED_PER_SPECIES, 1.0, 1.0);
+            totalTicks += res.ticks;
+            capyAcc += (res.cp || 0);
+            if(res.winner && res.winner !== 'draw') wins[res.winner]++;
+            else wins.draws++;
+            // accumulate totalHp sums for averages
+            if(res.totalHp){ totalHpSums.cats += res.totalHp.cats || 0; totalHpSums.dogs += res.totalHp.dogs || 0; totalHpSums.birds += res.totalHp.birds || 0; totalHpSums.fish += res.totalHp.fish || 0; totalHpSums.capy += res.totalHp.capy || 0; }
+            process.stdout.write('.');
+          }
+
+          const avgCapyAlive = +(capyAcc / RUNS_PER).toFixed(2);
+          const avgTicks = Math.round(totalTicks / RUNS_PER);
+          const catsW = wins.cats, dogsW = wins.dogs, birdsW = wins.birds, fishW = wins.fish, capyW = wins.capy, draws = wins.draws;
+          const avgHpCats = +(totalHpSums.cats / RUNS_PER).toFixed(2);
+          const avgHpDogs = +(totalHpSums.dogs / RUNS_PER).toFixed(2);
+          const avgHpBirds = +(totalHpSums.birds / RUNS_PER).toFixed(2);
+          const avgHpFish = +(totalHpSums.fish / RUNS_PER).toFixed(2);
+          const avgHpCapy = +(totalHpSums.capy / RUNS_PER).toFixed(2);
+          const winRateDogs = dogsW / RUNS_PER;
+          results.push({ chompMax: maxV, chompProb: pV, calmProb: cV, dogsW, catsW, birdsW, fishW, capyW, draws, avgTicks, avgCapyAlive, avgHpCats, avgHpDogs, avgHpBirds, avgHpFish, avgHpCapy, winRateDogs });
+          outCsv.push([maxV, pV, cV, dogsW, catsW, birdsW, fishW, capyW, draws, avgCapyAlive, avgTicks, avgHpCats, avgHpDogs, avgHpBirds, avgHpFish, avgHpCapy].join(','));
+
+        } finally {
+          // restore saved abilities
+          capyAbilities[0] = saved0;
+          if(saved1) capyAbilities[1] = saved1;
+        }
       }
-      const winRateDogs = dogsW / RUNS_PER;
-      const winRateCats = catsW / RUNS_PER;
-      results.push({ dogMult: dv, catMult: cv, dogsW, catsW, draws, avgTicks: Math.round(totalTicks / RUNS_PER), winRateDogs, winRateCats });
-      process.stdout.write('.');
     }
   }
 
-  console.log('\nDone grid.');
+  // write CSV
+  try{
+    const csv = [header].concat(outCsv).join('\n');
+    const fs = require('fs');
+    fs.writeFileSync('grid_capy_results.csv', csv);
+    console.log('\nWrote grid_capy_results.csv');
+  }catch(e){ console.warn('Failed to write CSV', e); }
 
-  results.sort((a,b) => Math.abs(a.winRateDogs - 0.5) - Math.abs(b.winRateDogs - 0.5));
-
-  console.log('Top 8 candidates (closest to 50% dog win rate):');
-  console.log('dogMult, catMult, dogWins, catWins, draws, winRateDogs, avgTicks');
-  for(let i = 0; i < Math.min(8, results.length); i++){
+  console.log('\nDone grid. Sorting by avgCapyAlive asc then dog win closeness to 0.5');
+  results.sort((a,b) => (a.avgCapyAlive - b.avgCapyAlive) || (Math.abs(a.winRateDogs - 0.5) - Math.abs(b.winRateDogs - 0.5)));
+  console.log('Top 8 candidates (lowest avgCapyAlive):');
+  console.log('chompMax,chompProb,calmProb,dogsW,catsW,birdsW,fishW,capyW,draws,avgCapyAlive,avgTicks,avgHpCats,avgHpDogs,avgHpBirds,avgHpFish,avgHpCapy,winRateDogs');
+  for(let i=0;i<Math.min(8,results.length); i++){
     const r = results[i];
-    console.log(`${r.dogMult}, ${r.catMult}, ${r.dogsW}, ${r.catsW}, ${r.draws}, ${r.winRateDogs.toFixed(2)}, ${r.avgTicks}`);
+    console.log(`${r.chompMax},${r.chompProb},${r.calmProb},${r.dogsW},${r.catsW},${r.birdsW},${r.fishW},${r.capyW},${r.draws},${r.avgCapyAlive},${r.avgTicks},${r.avgHpCats},${r.avgHpDogs},${r.avgHpBirds},${r.avgHpFish},${r.avgHpCapy},${(r.winRateDogs||0).toFixed(2)}`);
   }
 }
 
-runGrid();
+if(require.main === module){
+  runGrid();
+}
+
+// Export helpers for programmatic reuse (reruns)
+try{ module.exports = { runOneSimple, capyAbilities }; }catch(e){ /* ignore in browser */ }

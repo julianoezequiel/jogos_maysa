@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" aria-label="Ilustração detalhada de um gatinho">
+  <defs>
+    <radialGradient id="catFur" cx="40%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#fff6e8" />
+      <stop offset="60%" stop-color="#e0b48a" />
+      <stop offset="100%" stop-color="#b67d4b" />
+    </radialGradient>
+    <linearGradient id="catEar" x1="0" x2="1">
+      <stop offset="0%" stop-color="#d89a6b" />
+      <stop offset="100%" stop-color="#8b5532" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(0,20)">
+    <!-- head -->
+    <ellipse cx="256" cy="180" rx="120" ry="110" fill="url(#catFur)" />
+    <!-- ears -->
+    <path d="M180 120 L150 70 L200 110 Z" fill="url(#catEar)" stroke="#8b5532" stroke-width="2" />
+    <path d="M332 120 L362 70 L312 110 Z" fill="url(#catEar)" stroke="#8b5532" stroke-width="2" />
+    <!-- eyes -->
+    <ellipse cx="220" cy="180" rx="22" ry="30" fill="#1b1b1b" />
+    <ellipse cx="292" cy="180" rx="22" ry="30" fill="#1b1b1b" />
+    <circle cx="212" cy="172" r="5" fill="#fff" />
+    <circle cx="284" cy="172" r="5" fill="#fff" />
+    <!-- nose/muzzle -->
+    <path d="M246 220 Q256 232 266 220" stroke="#5a3520" stroke-width="3" fill="#f9e7d0" />
+    <ellipse cx="256" cy="235" rx="36" ry="24" fill="#f9e7d0" />
+    <ellipse cx="256" cy="232" rx="6" ry="4" fill="#2b1b12" />
+    <!-- whiskers -->
+    <path d="M190 230 Q220 232 240 232" stroke="#b07b4f" stroke-width="2" />
+    <path d="M316 230 Q286 232 266 232" stroke="#b07b4f" stroke-width="2" />
+    <!-- body -->
+    <ellipse cx="256" cy="340" rx="150" ry="120" fill="url(#catFur)" />
+    <ellipse cx="256" cy="355" rx="100" ry="70" fill="#fff6e8" opacity="0.95" />
+    <!-- paws -->
+    <ellipse cx="200" cy="400" rx="28" ry="16" fill="#d9a67b" />
+    <ellipse cx="312" cy="400" rx="28" ry="16" fill="#d9a67b" />
+    <!-- collar -->
+    <rect x="180" y="300" rx="12" ry="12" width="160" height="28" fill="#3a9ad8" stroke="#256f9a" stroke-width="3" />
+  </g>
+</svg>

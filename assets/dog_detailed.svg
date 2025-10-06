@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Detailed vector puppy illustration (original, free to use in this project)
+  - layers: base fur, shading, facial features, eyes highlight, nose, collar
+  - sized to be friendly for game sprites; can be scaled by sketch.js
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" aria-label="Ilustração detalhada de um cachorrinho">
+  <defs>
+    <radialGradient id="furGrad" cx="40%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#f6e1c3" />
+      <stop offset="60%" stop-color="#d9b48c" />
+      <stop offset="100%" stop-color="#b07b4f" />
+    </radialGradient>
+    <linearGradient id="earShade" x1="0" x2="1">
+      <stop offset="0%" stop-color="#c38a5e" />
+      <stop offset="100%" stop-color="#8f5a35" />
+    </linearGradient>
+    <radialGradient id="eyeGrad" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#333" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#000" />
+    </radialGradient>
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- body / torso -->
+  <g transform="translate(0,30)">
+    <ellipse cx="256" cy="350" rx="160" ry="120" fill="url(#furGrad)" filter="url(#softShadow)" />
+    <!-- tummy lighter -->
+    <ellipse cx="256" cy="360" rx="110" ry="70" fill="#f8e8d2" opacity="0.9" />
+
+    <!-- head -->
+    <g id="head">
+      <ellipse cx="256" cy="200" rx="140" ry="120" fill="url(#furGrad)" />
+      <!-- muzzle -->
+      <ellipse cx="256" cy="230" rx="80" ry="56" fill="#f7e6cf" />
+      <!-- nose -->
+      <ellipse cx="256" cy="230" rx="16" ry="12" fill="#111" />
+      <path d="M248 238 C252 244, 260 244, 264 238" stroke="#2b2b2b" stroke-width="3" fill="none" stroke-linecap="round" />
+      <!-- mouth -->
+      <path d="M246 246 Q256 252 266 246" stroke="#3b2b2b" stroke-width="3" fill="none" stroke-linecap="round" />
+      <!-- left ear -->
+      <g transform="translate(162,130) rotate(-18)">
+        <path d="M0 0 C -40 -8, -56 -54, -18 -84 C 20 -60, 8 -10, 0 0 Z" fill="url(#earShade)" stroke="#6b3f22" stroke-width="2" />
+        <ellipse cx="-12" cy="-50" rx="16" ry="26" fill="#8f5a35" opacity="0.14" />
+      </g>
+      <!-- right ear -->
+      <g transform="translate(350,130) rotate(18)">
+        <path d="M0 0 C 40 -8, 56 -54, 18 -84 C -20 -60, -8 -10, 0 0 Z" fill="url(#earShade)" stroke="#6b3f22" stroke-width="2" />
+        <ellipse cx="12" cy="-50" rx="16" ry="26" fill="#8f5a35" opacity="0.14" />
+      </g>
+
+      <!-- eyes -->
+      <g>
+        <ellipse cx="216" cy="200" rx="28" ry="24" fill="#1b1b1b" />
+        <ellipse cx="296" cy="200" rx="28" ry="24" fill="#1b1b1b" />
+        <!-- catchlights -->
+        <circle cx="206" cy="192" r="6" fill="#fff" opacity="0.95" />
+        <circle cx="286" cy="192" r="6" fill="#fff" opacity="0.95" />
+      </g>
+
+      <!-- subtle fur strokes around cheeks -->
+      <path d="M184 218 C200 226, 212 232, 232 236" stroke="#a67b52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.4" />
+      <path d="M328 218 C312 226, 300 232, 280 236" stroke="#a67b52" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.4" />
+    </g>
+
+    <!-- collar -->
+    <g transform="translate(0,24)">
+      <rect x="166" y="292" rx="12" ry="12" width="180" height="38" fill="#c83a3a" stroke="#8f2222" stroke-width="3" />
+      <circle cx="256" cy="312" r="10" fill="#f7d24a" stroke="#c68e1a" stroke-width="2" />
+      <path d="M246 318 Q256 326 266 318" fill="#c05a05" opacity="0.14" />
+    </g>
+
+    <!-- front paw (left) -->
+    <g>
+      <ellipse cx="190" cy="390" rx="34" ry="20" fill="#d8ac82" />
+      <ellipse cx="190" cy="392" rx="14" ry="9" fill="#c58b60" />
+    </g>
+    <!-- front paw (right) -->
+    <g>
+      <ellipse cx="322" cy="390" rx="34" ry="20" fill="#d8ac82" />
+      <ellipse cx="322" cy="392" rx="14" ry="9" fill="#c58b60" />
+    </g>
+  </g>
+
+  <!-- minor decorative shadow under the dog -->
+  <ellipse cx="256" cy="460" rx="170" ry="30" fill="#000" opacity="0.08" />
+</svg>

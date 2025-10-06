@@ -1,26 +1,51 @@
 :root{--bg:#f0f0f8;--card:#fff;--accent:#ffd24a}
 *{box-sizing:border-box;font-family:Inter, Arial, sans-serif}
 body{margin:0;display:flex;flex-direction:column;align-items:center;background:var(--bg);height:100vh}
-#ui{width:1400px;max-width:96%;margin:12px}
-#hud{display:flex;gap:12px;align-items:center}
+main{width:100%;padding-top:5px;display:flex;justify-content:center}
+/* tighten overall UI width so canvas can expand on typical screens */
+#ui{width:1200px;max-width:96%;margin:8px}
+#hud{display:flex;gap:8px;align-items:center}
+/* live counts are now rendered inside the canvas HUD */
 #catHealth,#dogHealth{background:#fff;padding:8px 12px;border-radius:8px;border:1px solid #e0e0e0; display: none;}
 #message{flex:1;text-align:center;font-weight:700}
-#canvas-container{width:1200px;height:500px;background:linear-gradient(#bfe7ff,#fff);border-radius:10px;overflow:hidden;position:relative}
-button{padding:8px 12px;border-radius:8px;border:none;background:var(--card);cursor:pointer;transition: all 0.2s ease;}
-button:hover{background:#e0e0e0; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
-#startBtn{background:#4CAF50; color: white;}
-#startBtn:hover{background:#45a049;}
-#restartBtn{background:#f44336; color: white;}
-#restartBtn:hover{background:#da190b;}
-#simulateBtn{background:#2196F3; color: white;}
-#simulateBtn:hover{background:#0b7dda;}
-#themeBtn{background:#9C27B0; color: white;}
-#themeBtn:hover{background:#7B1FA2;}
+#arena-wrap{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;max-width:1400px;margin:0 auto;width:100%}
+/* layout: canvas takes ~70% width and side-panel ~30% on larger screens
+ 	 height is set dynamically by JS to fit between the top UI and any bottom UI chrome */
+#canvas-container{flex:0 0 70%;min-width:320px;background:linear-gradient(#f0fbff,#fff);border-radius:6px;overflow:hidden;position:relative;box-shadow:0 8px 30px rgba(0,0,0,0.06);height:auto;display:block}
+/* side panel participates in the flex flow so canvas truly gets 70% of available width */
+#side-panel{flex:0 0 30%;position:relative;right:auto;top:auto;width:auto;max-height:calc(100vh - 160px);background:linear-gradient(#fff,#fbfbff);border-radius:10px;padding:12px;border:1px solid #eef2fb;box-shadow:0 10px 30px rgba(0,0,0,0.08);z-index:1200;overflow:auto}
+
+/* responsive: stack vertically on small screens */
+@media (max-width:900px){
+	#arena-wrap{flex-direction:column;align-items:stretch}
+	#canvas-container,#side-panel{flex:0 0 auto;width:100%}
+	#side-panel{order:2}
+}
+#side-panel h3{margin:0 0 6px 0;font-size:16px}
+#opponent-names{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.opponent-item{padding:6px;background:#f7f9ff;border-radius:8px;border:1px solid #edf0ff;font-weight:700}
+#side-ranking h4{margin:6px 0 4px 0;font-size:13px}
+#side-ranking div{font-size:13px;padding:3px 0}
+#controls{display:flex;gap:10px;align-items:center}
+/* consistent button look: larger, higher contrast */
+#controls button{padding:10px 14px;border-radius:8px;border:1px solid rgba(0,0,0,0.08);background:#fff;cursor:pointer;transition: all 0.12s ease;box-shadow:0 3px 8px rgba(0,0,0,0.06);font-weight:800;font-size:14px;color:#222}
+#controls button:hover{transform: translateY(-2px);box-shadow:0 8px 18px rgba(0,0,0,0.12)}
+/* cheerful, distinct colors per button for quick recognition */
+#startBtn{background:#2ecc71;color:#fff;border-color:rgba(0,0,0,0.06)} /* bright green */
+#restartBtn{background:#e74c3c;color:#fff;border-color:rgba(0,0,0,0.06)} /* red */
+#pauseBtn{background:#f39c12;color:#fff} /* orange */
+#themeBtn{background:#9b59b6;color:#fff} /* purple */
+#simulateBtn{background:#3498db;color:#fff} /* blue */
+#clearRankingBtn{background:#ecf0f1;color:#2c3e50;border:1px solid #dfe6f0} /* light gray */
+#muteBtn{background:#1abc9c;color:#fff;border:1px solid rgba(0,0,0,0.04)} /* teal */
+
+/* slightly rounder, friendlier buttons */
+#controls button{border-radius:12px}
 #abilities{display:flex;gap:8px;align-items:center;margin-top:8px}
 #abilitySelect{padding:6px;border-radius:6px}
 #attackBtn{background:#ffd24a}
-#touchControls{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
-#touchControls button{width:56px;height:56px;border-radius:50%;font-weight:700}
+#touchControls{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px}
+#touchControls button{width:52px;height:52px;border-radius:50%;font-weight:700}
 #gameOver{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,0.6);color:white;font-size:30px}
 #insult{color:#ffde59;font-size:22px;margin-top:10px}
 #gameOver button{background:#2196F3; color: white; padding:10px 20px; font-size:18px; margin-top:20px;}

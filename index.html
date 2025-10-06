@@ -8,27 +8,53 @@
 </head>
 <body>
   <div id="ui">
-    <div id="hud">
-    </div>
+    <div id="hud"></div>
     <div id="controls">
   <button id="startBtn">Iniciar</button>
       <button id="restartBtn">Reiniciar</button>
-      <button id="themeBtn">Switch to Liz vs Maysa</button>
+  <button id="pauseBtn">Pause</button>
+  <button id="themeBtn">Switch to Family Mode</button>
       <button id="clearRankingBtn">Limpar Ranking</button>
-  <label style="margin-left:12px;">Gatos: <input id="numCats" type="text" value="10" /></label>
-  <label style="margin-left:12px;">Cachorros: <input id="numDogs" type="text" value="10" /></label>
-  <label style="margin-left:12px;">Calopsitas: <input id="numBirds" type="text" value="10" /></label>
-  <label style="margin-left:12px;">Peixes: <input id="numFish" type="text" value="10" /></label>
-      <span id="timer" style="margin-left:12px; font-weight:bold;">Tempo: 0:00</span>
+        <!-- Master audio controls -->
+        <label style="margin-left:12px; display:inline-flex; align-items:center;">Volume:
+          <input id="masterVolume" type="range" min="0" max="100" value="100" style="margin:0 8px;" />
+          <span id="masterVolumeLabel">100%</span>
+        </label>
+        <button id="muteBtn" style="margin-left:8px;">🔊</button>
+      
       <button id="historyBtn" style="margin-left:12px;">📜</button>
       <label style="margin-left:12px;"><input type="checkbox" id="autoRestartCb"> Auto Restart</label>
     </div>
     <div id="historyMenu" style="display:none; position:fixed; top:100px; left:50%; transform:translateX(-50%); background:white; border:1px solid #ccc; padding:10px; max-height:200px; overflow-y:auto; z-index:1000;"></div>
   </div>
   <main>
-    <div id="canvas-container"></div>
+    <div id="arena-wrap">
+      <div id="canvas-container">
+        <!-- canvas will be injected here by p5.js; live counts kept outside to avoid duplicate IDs -->
+      </div>
+      <aside id="side-panel">
+        <h3>Oponentes</h3>
+  <div id="opponent-names">
+          <div class="opponent-item">Gatos: <input id="numCats" type="text" value="10" style="width:60px; margin-left:8px;" /></div>
+          <div class="opponent-item">Cachorros: <input id="numDogs" type="text" value="10" style="width:60px; margin-left:8px;" /></div>
+          <div class="opponent-item">Calopsitas: <input id="numBirds" type="text" value="10" style="width:60px; margin-left:8px;" /></div>
+          <div class="opponent-item">Peixes: <input id="numFish" type="text" value="10" style="width:60px; margin-left:8px;" /></div>
+          <div class="opponent-item">Capivaras: <input id="numCapy" type="text" value="10" style="width:60px; margin-left:8px;" /></div>
+        </div>
+        <div id="side-ranking">
+          <h4>Vitórias</h4>
+          <div id="rank-cats">Gatos: 0</div>
+          <div id="rank-dogs">Cachorros: 0</div>
+          <div id="rank-birds">Calopsitas: 0</div>
+          <div id="rank-fish">Peixes: 0</div>
+          <div id="rank-capy">Capivaras: 0</div>
+        </div>
+        <div id="side-timer" style="margin-top:12px;font-weight:bold;">Tempo: <span id="timer">0:00</span></div>
+      </aside>
+    </div>
   </main>
 
+    <!-- live counts are now rendered inside the canvas HUD; removed bottom DOM block -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
   <script src="scripts/audio.js"></script>
   <!-- Species loader: usa ES modules para importar as definições de espécie
