@@ -1,3 +1,13 @@
+# BatteryBot
+
+Pequeno jogo HTML/JS embutido neste monorepo.
+
+Como executar
+- Abra `BatteryBot/index.html` em um navegador moderno.
+- Ou sirva o diretório com um servidor estático (por exemplo, `npx http-server BatteryBot`).
+
+Observações
+- Este diretório foi exportado do monorepo `jogos_maysa` e publicado em um repositório remoto separado.
 # Caçadora de Pugs
 
 Este é um jogo web personalizado baseado no "Battery Bot" original. Nele, você controla uma menina corajosa em uma vila infestada de pugs malvados. Sua missão é encontrar e eliminar todos os pugs antes que eles destruam tudo!

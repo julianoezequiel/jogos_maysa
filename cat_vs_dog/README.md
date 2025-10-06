@@ -1,3 +1,12 @@
+# Cat vs Dog
+
+Jogo `cat_vs_dog` convertido para subtree e publicado em um repositório remoto separado.
+
+Como executar
+- Abra `cat_vs_dog/index.html` em um navegador.
+
+Observações
+- Histórico preservado ao adicionar como subtree.
 # cat_vs_dog
 
 Jogo p5.js com o tema gato vs cachorro. Contém sketch, assets e um runner de simulação.
