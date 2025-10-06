@@ -1,3 +1,27 @@
+# HuntGame
+
+Jogo simples feito com p5.js (versões compatíveis incluídas).
+
+Resumo
+- Pequeno jogo onde você controla um personagem e interage com sprites/objetos na tela. Projetado como exercício de sketch interativo.
+
+Como rodar
+- Abra `HuntGame/index.html` em um navegador moderno.
+- Para desenvolvimento, rode um servidor estático na pasta do projeto:
+
+  - Python: `python -m http.server 8000`
+  - Node: `npx http-server HuntGame`
+
+Arquivos importantes
+- `index.html` — página principal
+- `sketch.js` / `sketch.legacy.js` — código p5.js
+- `assets/` — gráficos e SVGs
+
+Licença
+- Verifique a licença no repositório raiz `jogos_maysa`.
+
+Observações
+- Este diretório foi exportado do monorepo e também publicado como repositório separado.
 HuntGame
 ========
 

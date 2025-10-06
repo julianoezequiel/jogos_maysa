@@ -1,3 +1,26 @@
+# cat_vs_dog
+
+Pequeno jogo de interação entre animais (simulação/visualização).
+
+Resumo
+- Projeto com sketch p5.js que simula interações entre espécies (gatos, cachorros, etc.).
+
+Como rodar
+- Abra `cat_vs_dog/index.html` em um navegador moderno.
+- Recomendado: rode um servidor local para evitar problemas de CORS:
+
+  - `python -m http.server 8000` (no diretório raiz do projeto)
+
+Arquivos importantes
+- `index.html` — entrada do jogo
+- `scripts/sketch.js` — lógica de carregamento e sketch
+- `assets/` — imagens (use as imagens com `-new` quando disponíveis)
+
+Licença
+- Verifique a licença no repositório raiz `jogos_maysa`.
+
+Observações
+- Este subprojeto foi publicado como repositório separado; o histórico foi preservado.
 cat_vs_dog
 ==========
 
