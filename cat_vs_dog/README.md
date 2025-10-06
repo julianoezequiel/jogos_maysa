@@ -1,3 +1,18 @@
+cat_vs_dog
+==========
+
+Jogo de demonstração com assets rasterizados a partir de SVGs.
+
+Como executar
+- Abra `cat_vs_dog/index.html` em um navegador.
+- Ou sirva a pasta com `npx http-server` ou `python -m http.server`.
+
+Detalhes
+- O `scripts/sketch.js` foi modificado para preferir imagens `*-new.png` quando disponíveis.
+- Há uma pasta `assets/unused/` com SVGs/detalhes movidos para reduzir redundância.
+
+Histórico
+- Este subprojeto foi empurrado para o repositório remoto `jogos_maysa-cat_vs_dog` e está integrado no monorepo via subtree.
 # cat_vs_dog
 
 Jogo p5.js com o tema gato vs cachorro. Este subprojeto foi publicado separadamente em: https://github.com/julianoezequiel/jogos_maysa-cat_vs_dog
