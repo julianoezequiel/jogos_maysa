@@ -1,3 +1,29 @@
+# cat_vs_dog
+
+Jogo p5.js com o tema gato vs cachorro. Este subprojeto foi publicado separadamente em: https://github.com/julianoezequiel/jogos_maysa-cat_vs_dog
+
+Como rodar localmente
+- Abra `index.html` em um navegador moderno.
+- Ou sirva o diretório localmente (recomendado):
+
+```powershell
+cd cat_vs_dog
+python -m http.server 8002
+# então abra http://localhost:8002
+```
+
+Arquivos importantes
+- `index.html` — entrada do jogo
+- `scripts/sketch.js` — sketch p5.js (carrega imagens preferindo `*-new.png` quando presentes)
+- `assets/` — imagens e áudio (arquivos redundantes foram movidos para `assets/unused/`)
+- `sim_runner_node.js` — runner de simulação headless (Node)
+
+Notas
+- Histórico preservado quando o subprojeto foi extraído/empurrado para um repositório remoto.
+- Backups locais: `BatteryBot_git_backup`, `HuntGame_git_backup`, `cat_vs_dog_local_backup` — revise antes de apagar.
+
+Licença
+- Parte do repositório `jogos_maysa`.
 # Cat vs Dog
 
 Jogo `cat_vs_dog` convertido para subtree e publicado em um repositório remoto separado.

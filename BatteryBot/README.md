@@ -1,6 +1,29 @@
 BatteryBot
 =========
 
+Pequeno jogo feito com Phaser (HTML/JS). Controle um robô que coleta baterias e evita inimigos.
+
+Como rodar localmente
+- Abra `BatteryBot/index.html` em um navegador moderno.
+- Para evitar problemas de CORS, rode um servidor estático na pasta `BatteryBot`. Exemplo com Python:
+
+```powershell
+cd BatteryBot
+python -m http.server 8000
+# então abra http://localhost:8000
+```
+
+Arquivos importantes
+- `index.html` — página principal
+- `phaser.min.js` — engine Phaser
+- `assets/` — imagens e sons usados pelo jogo
+
+Licença e créditos
+- Conteúdo e código dentro deste diretório são parte do repositório `jogos_maysa`.
+- Créditos: julianoezequiel (autor do repositório)
+BatteryBot
+=========
+
 Pequeno jogo feito com Phaser que controla um robô coletor de baterias.
 
 Como abrir
