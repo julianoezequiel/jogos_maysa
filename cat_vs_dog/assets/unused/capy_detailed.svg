@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="320" viewBox="0 0 512 320" aria-label="Ilustração detalhada de uma capivara">
+  <g>
+    <ellipse cx="256" cy="200" rx="200" ry="90" fill="#caa87b" />
+    <ellipse cx="256" cy="170" rx="140" ry="70" fill="#e9d4b3" />
+    <ellipse cx="180" cy="150" rx="46" ry="36" fill="#6b4a31" />
+    <ellipse cx="332" cy="150" rx="46" ry="36" fill="#6b4a31" />
+    <circle cx="220" cy="142" r="8" fill="#1b1b1b" />
+    <circle cx="292" cy="142" r="8" fill="#1b1b1b" />
+    <ellipse cx="256" cy="188" rx="28" ry="18" fill="#5a3d24" />
+  </g>
+</svg>

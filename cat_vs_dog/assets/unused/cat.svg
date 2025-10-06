@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <g transform="translate(60,60)">
+    <ellipse cx="0" cy="8" rx="28" ry="22" fill="#ffd24a" stroke="#333" stroke-width="2" />
+    <circle cx="-8" cy="-2" r="4" fill="#222" />
+    <circle cx="8" cy="-2" r="4" fill="#222" />
+    <path d="M-14 -12 L-24 -28 L-8 -18" fill="#ffd24a" stroke="#333" stroke-width="2" />
+    <path d="M14 -12 L24 -28 L8 -18" fill="#ffd24a" stroke="#333" stroke-width="2" />
+  </g>
+</svg>
