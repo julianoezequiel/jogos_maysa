@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Caçadora de Pugs</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="phaser.min.js"></script>
+</head>
+<body>
+
+  <!-- The Phaser canvas is injected by the engine -->
+
+  <div id="name-modal" class="name-modal">
+    <div class="modal-content">
+      <h2>Bem-vinda, guerreira!</h2>
+      <p>Digite seu nome para começar:</p>
+      <input id="player-name" type="text" placeholder="Seu nome" maxlength="32" />
+      <div class="modal-actions">
+        <button id="name-submit">Começar</button>
+      </div>
+    </div>
+  </div>
+
+  <button id="ranking-btn" class="ranking-btn">Ranking</button>
+
+  <!-- Start button (shown during intro) -->
+  <button id="start-btn" class="action-btn" style="display:none;">Começar</button>
+
+  <!-- Restart button (shown on game over) -->
+  <button id="restart-btn" class="action-btn" style="display:none;">Reiniciar</button>
+
+  <!-- Restart options: same player or new player -->
+  <div id="restart-options" style="display:none; position:fixed; left:50%; transform:translateX(-50%); bottom:24px; z-index:1200;">
+    <button id="restart-same" class="action-btn" style="margin-right:8px;">Reiniciar (mesmo jogador)</button>
+    <button id="restart-new" class="action-btn">Reiniciar (novo jogador)</button>
+  </div>
+
+  <div id="ranking-modal" class="name-modal" style="display:none;">
+    <div class="modal-content">
+      <h2>Ranking Local</h2>
+      <ol id="ranking-list" style="text-align:left; max-height:300px; overflow:auto; padding-left:16px;"></ol>
+      <div class="modal-actions">
+        <button id="ranking-close">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/game.js"></script>
+
+</body>
+</html>
