@@ -97,30 +97,31 @@ const capyAbilities = [
   { name: 'Serene Aura', type: 'buffDamage', amount: 0.45, duration: 5000, prob: 0.06 }
 ];
 function preload(){
-  // prefer files that have "new" in the filename (user-provided updated art)
+  // Load a single main PNG per species. Preference order:
+  // 1) user-supplied updated art: assets/<species>-new.png
+  // 2) base PNG: assets/<species>.png
+  // 3) fallback SVG: assets/<species>.svg
+  // This simplifies asset footprint and avoids redundant img variables.
   catImg = null; dogImg = null; birdImg = null; fishImg = null; capyImg = null;
-  // Try PNG first (generated), fall back to SVG. This avoids CORS/renderer issues with some browsers
-  loadImage('assets/cat-new.png', function(img){ catImg = img; try{ console.log('cat-new.png loaded'); }catch(e){} }, function(){ loadImage('assets/cat-new.svg', function(img){ catImg = img; try{ console.log('cat-new.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/dog-new.png', function(img){ dogImg = img; try{ console.log('dog-new.png loaded'); }catch(e){} }, function(){ loadImage('assets/dog-new.svg', function(img){ dogImg = img; try{ console.log('dog-new.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/bird-new.png', function(img){ birdImg = img; try{ console.log('bird-new.png loaded'); }catch(e){} }, function(){ loadImage('assets/bird-new.svg', function(img){ birdImg = img; try{ console.log('bird-new.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/fish-new.png', function(img){ fishImg = img; try{ console.log('fish-new.png loaded'); }catch(e){} }, function(){ loadImage('assets/fish-new.svg', function(img){ fishImg = img; try{ console.log('fish-new.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/capybara-new.png', function(img){ capyImg = img; try{ console.log('capybara-new.png loaded'); }catch(e){} }, function(){ loadImage('assets/capybara-new.svg', function(img){ capyImg = img; try{ console.log('capybara-new.svg loaded'); }catch(e){} }, function(){}); });
 
-  // fallbacks: svgrepo placeholders (if you downloaded via helper) - prefer PNG when present
-  loadImage('assets/svgrepo_cat.png', function(img){ if(!catImg) catImg = img; try{ console.log('svgrepo_cat.png loaded'); }catch(e){} }, function(){ loadImage('assets/svgrepo_cat.svg', function(img){ if(!catImg) catImg = img; try{ console.log('svgrepo_cat.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/svgrepo_dog.png', function(img){ if(!dogImg) dogImg = img; try{ console.log('svgrepo_dog.png loaded'); }catch(e){} }, function(){ loadImage('assets/svgrepo_dog.svg', function(img){ if(!dogImg) dogImg = img; try{ console.log('svgrepo_dog.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/svgrepo_bird.png', function(img){ if(!birdImg) birdImg = img; try{ console.log('svgrepo_bird.png loaded'); }catch(e){} }, function(){ loadImage('assets/svgrepo_bird.svg', function(img){ if(!birdImg) birdImg = img; try{ console.log('svgrepo_bird.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/svgrepo_fish.png', function(img){ if(!fishImg) fishImg = img; try{ console.log('svgrepo_fish.png loaded'); }catch(e){} }, function(){ loadImage('assets/svgrepo_fish.svg', function(img){ if(!fishImg) fishImg = img; try{ console.log('svgrepo_fish.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/svgrepo_capy.png', function(img){ if(!capyImg) capyImg = img; try{ console.log('svgrepo_capy.png loaded'); }catch(e){} }, function(){ loadImage('assets/svgrepo_capy.svg', function(img){ if(!capyImg) capyImg = img; try{ console.log('svgrepo_capy.svg loaded'); }catch(e){} }, function(){}); });
+  // Helper inline loader: try primary, then base PNG, then SVG
+  const tryLoad = function(primaryPng, basePng, svg, assignFn, label){
+    loadImage(primaryPng,
+      function(img){ assignFn(img); try{ console.log(label + ' loaded from ' + primaryPng); }catch(e){} },
+      function(){
+        if(basePng){ loadImage(basePng, function(i){ assignFn(i); try{ console.log(label + ' loaded from ' + basePng); }catch(e){} }, function(){ if(svg){ assignFn(loadImage(svg)); try{ console.log(label + ' loaded from ' + svg); }catch(e){} } }); }
+        else if(svg){ assignFn(loadImage(svg)); try{ console.log(label + ' loaded from ' + svg); }catch(e){} }
+      }
+    );
+  };
 
-  // detailed art that was added previously - prefer PNG if present
-  loadImage('assets/cat_detailed.png', function(img){ if(!catImg) catImg = img; try{ console.log('cat_detailed.png loaded'); }catch(e){} }, function(){ loadImage('assets/cat_detailed.svg', function(img){ if(!catImg) catImg = img; try{ console.log('cat_detailed.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/dog_detailed.png', function(img){ if(!dogImg) dogImg = img; try{ console.log('dog_detailed.png loaded'); }catch(e){} }, function(){ loadImage('assets/dog_detailed.svg', function(img){ if(!dogImg) dogImg = img; try{ console.log('dog_detailed.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/bird_detailed.png', function(img){ if(!birdImg) birdImg = img; try{ console.log('bird_detailed.png loaded'); }catch(e){} }, function(){ loadImage('assets/bird_detailed.svg', function(img){ if(!birdImg) birdImg = img; try{ console.log('bird_detailed.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/fish_detailed.png', function(img){ if(!fishImg) fishImg = img; try{ console.log('fish_detailed.png loaded'); }catch(e){} }, function(){ loadImage('assets/fish_detailed.svg', function(img){ if(!fishImg) fishImg = img; try{ console.log('fish_detailed.svg loaded'); }catch(e){} }, function(){}); });
-  loadImage('assets/capy_detailed.png', function(img){ if(!capyImg) capyImg = img; try{ console.log('capy_detailed.png loaded'); }catch(e){} }, function(){ loadImage('assets/capy_detailed.svg', function(img){ if(!capyImg) capyImg = img; try{ console.log('capy_detailed.svg loaded'); }catch(e){} }, function(){}); });
+  tryLoad('assets/cat-new.png','assets/cat.png', null, function(i){ catImg = i; }, 'cat');
+  tryLoad('assets/dog-new.png','assets/dog.png', null, function(i){ dogImg = i; }, 'dog');
+  tryLoad('assets/bird-new.png','assets/bird.png', null, function(i){ birdImg = i; }, 'bird');
+  tryLoad('assets/fish-new.png','assets/fish.png', null, function(i){ fishImg = i; }, 'fish');
+  tryLoad('assets/capybara-new.png','assets/capy.png', null, function(i){ capyImg = i; }, 'capybara');
 
-  // family-mode faces and hide spot images
+  // family-mode faces and hide spot images (these are single-use assets)
   elizabethImg = loadImage('assets/elizabeth_rosto.png');
   maysaImg = loadImage('assets/maysa_rosto.png');
   mayaraImg = loadImage('assets/mayara_rosto.png');
@@ -128,13 +129,6 @@ function preload(){
   yasminImg = loadImage('assets/yasmin_rosto.png', function() { try{ console.log('yasmin_rosto.png loaded'); }catch(e){} }, function(err){ try{ console.warn('yasmin_rosto.png failed to load', err); }catch(e){} });
   treeImg = loadImage('assets/tree.svg');
   rockImg = loadImage('assets/rock.svg');
-
-  // final synchronous fallbacks (ensure something is available in preload) - prefer PNG base files if present
-  if(!catImg) catImg = (typeof loadImage === 'function') ? (loadImage('assets/cat.png', function(img){ if(!catImg) catImg = img; }, function(){ if(!catImg) catImg = loadImage('assets/cat.svg'); })) : null;
-  if(!dogImg) dogImg = (typeof loadImage === 'function') ? (loadImage('assets/dog.png', function(img){ if(!dogImg) dogImg = img; }, function(){ if(!dogImg) dogImg = loadImage('assets/dog.svg'); })) : null;
-  if(!birdImg) birdImg = (typeof loadImage === 'function') ? (loadImage('assets/cockatiel.png', function(img){ if(!birdImg) birdImg = img; }, function(){ if(!birdImg) birdImg = loadImage('assets/cockatiel.svg'); })) : null;
-  if(!fishImg) fishImg = (typeof loadImage === 'function') ? (loadImage('assets/fish.png', function(img){ if(!fishImg) fishImg = img; }, function(){ if(!fishImg) fishImg = loadImage('assets/fish.svg'); })) : null;
-  if(!capyImg) capyImg = (typeof loadImage === 'function') ? (loadImage('assets/capy.png', function(img){ if(!capyImg) capyImg = img; }, function(){ if(!capyImg) capyImg = loadImage('assets/capy.svg'); })) : null;
 }
 function setup(){
   // create canvas sized to the CSS container to avoid clipping
