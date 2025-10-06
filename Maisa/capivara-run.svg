@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Capivara com 4 frames horizontais: corrida leve -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300">
+  <defs>
+    <style><![CDATA[
+      .cap{fill:#d1a76b;stroke:#7b5a3b;stroke-width:6px}
+      .ear{fill:#eac792}
+      .eye{fill:#123}
+    ]]></style>
+  </defs>
+  <!-- frame 0 -->
+  <g transform="translate(0,0)">
+    <rect x="0" y="0" width="300" height="300" fill="transparent"/>
+    <g transform="translate(20,90) scale(1.0)">
+      <ellipse class="cap" cx="120" cy="60" rx="100" ry="50"/>
+      <circle class="ear" cx="60" cy="20" r="18"/>
+      <circle class="eye" cx="160" cy="55" r="6"/>
+      <rect x="210" y="95" width="40" height="10" rx="6" fill="#7b5a3b"/>
+      <rect x="120" y="95" width="30" height="12" rx="6" fill="#7b5a3b" transform="rotate(6 135 101)"/>
+    </g>
+  </g>
+
+  <!-- frame 1 -->
+  <g transform="translate(300,0)">
+    <rect x="0" y="0" width="300" height="300" fill="transparent"/>
+    <g transform="translate(10,88) scale(1.02)">
+      <ellipse class="cap" cx="120" cy="62" rx="100" ry="50"/>
+      <circle class="ear" cx="50" cy="22" r="18"/>
+      <circle class="eye" cx="150" cy="58" r="6"/>
+      <rect x="200" y="100" width="44" height="10" rx="6" fill="#7b5a3b"/>
+      <rect x="110" y="92" width="32" height="12" rx="6" fill="#7b5a3b" transform="rotate(-8 126 98)"/>
+    </g>
+  </g>
+
+  <!-- frame 2 -->
+  <g transform="translate(600,0)">
+    <rect x="0" y="0" width="300" height="300" fill="transparent"/>
+    <g transform="translate(18,92) scale(0.98)">
+      <ellipse class="cap" cx="120" cy="60" rx="100" ry="50"/>
+      <circle class="ear" cx="65" cy="18" r="18"/>
+      <circle class="eye" cx="165" cy="56" r="6"/>
+      <rect x="208" y="94" width="36" height="10" rx="6" fill="#7b5a3b"/>
+      <rect x="118" y="96" width="28" height="12" rx="6" fill="#7b5a3b" transform="rotate(4 132 102)"/>
+    </g>
+  </g>
+
+  <!-- frame 3 -->
+  <g transform="translate(900,0)">
+    <rect x="0" y="0" width="300" height="300" fill="transparent"/>
+    <g transform="translate(16,86) scale(1.01)">
+      <ellipse class="cap" cx="120" cy="60" rx="100" ry="50"/>
+      <circle class="ear" cx="58" cy="20" r="18"/>
+      <circle class="eye" cx="158" cy="52" r="6"/>
+      <rect x="202" y="98" width="38" height="10" rx="6" fill="#7b5a3b"/>
+      <rect x="122" y="94" width="30" height="12" rx="6" fill="#7b5a3b" transform="rotate(-6 137 100)"/>
+    </g>
+  </g>
+
+</svg>

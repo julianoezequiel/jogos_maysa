@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hugo & Amigos - Jogo Simples</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="game-wrap">
+    <h1>Hugo & Amigos</h1>
+    <div class="layout">
+      <aside class="sidebar">
+        <h3>Coletados</h3>
+        <ul id="collectedList" class="collected-list">
+          <li data-id="capivara"><img src="capivara.svg" alt="capivara"><span class="label">Capivara</span><span class="count" id="count-capivara">0</span></li>
+          <li data-id="pug"><img src="pug.svg" alt="pug"><span class="label">Pug</span><span class="count" id="count-pug">0</span></li>
+          <li data-id="dragon"><img src="dragon.svg" alt="dragão"><span class="label">Dragão</span><span class="count" id="count-dragon">0</span></li>
+        </ul>
+      </aside>
+      <main class="game-area">
+        <canvas id="game" width="800" height="450"></canvas>
+      </main>
+    </div>
+    <div class="controls">
+      <button id="startBtn">Iniciar</button>
+      <button id="restartBtn">Reiniciar</button>
+      <label class="toggle"><input type="checkbox" id="mute"> Mudo</label>
+    </div>
+  <p class="instructions">Use as setas ou WASD para mover Hugo por toda a tela e coletar seus amigos (capivara, pug, dragão).</p>
+    <div id="story" class="story">
+      <h2>Historinha</h2>
+      <p id="storyText">Clique em Iniciar para ouvir a historinha curta sobre Hugo e seus amigos.</p>
+    </div>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>

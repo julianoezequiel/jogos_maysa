@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Capivara Aventura — Maisa</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Capivara Aventura</h1>
+    <p class="subtitle">Use as setas ↑ ↓ ← → ou W A S D para mover. Criança de 10 anos — pensado para aprender e brincar!</p>
+
+    <div class="game-wrap">
+      <canvas id="game" width="900" height="450" aria-label="Canvas do jogo Capivara Aventura"></canvas>
+
+      <div class="ui">
+        <div class="score">Pontos: <span id="score">0</span></div>
+        <div class="controls">
+          <button id="startBtn">Iniciar</button>
+          <button id="pauseBtn">Pausar</button>
+          <button id="restartBtn">Reiniciar</button>
+        </div>
+      </div>
+      <!-- audio controls and small modal container -->
+      <div class="audio-controls">
+        <button id="musicToggle">Música: On</button>
+        <button id="sfxToggle">Sons: On</button>
+        <button id="muteToggle">Mudo: Off</button>
+      </div>
+
+      <div id="gameModal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+          <h3 id="modalTitle">Fim de Jogo</h3>
+          <p id="modalMessage">Você perdeu!</p>
+          <div class="modal-actions">
+            <button id="modalRestart">Reiniciar</button>
+            <button id="modalClose">Fechar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="explain">
+      <h2>Como funciona</h2>
+      <ul>
+        <li>A capivara anda pela tela automaticamente. Você controla o movimento vertical e horizontal para desviar.</li>
+        <li>Evite os obstáculos. Para cada obstáculo ultrapassado você ganha pontos.</li>
+        <li>Ideal para aprender conceitos básicos: variáveis, laços, colisões e eventos de teclado.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <small>Feito para Maisa — código simples e comentado em português.</small>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "collision_explosion": {
+    "lifespan": 1000,
+    "frequency": 10,
+    "quantity": 10,
+    "x": { "min": -10, "max": 10 },
+    "y": { "min": -10, "max": 10 },
+    "tint": [255, 16777215]
+  },
+  "shard_collect_fx": {
+    "lifespan": 500,
+    "frequency": 20,
+    "quantity": 5,
+    "x": { "min": -5, "max": 5 },
+    "y": { "min": -5, "max": 5 },
+    "tint": [16776960, 16753920]
+  },
+  "jump_jet_trail": {
+    "lifespan": 300,
+    "frequency": 30,
+    "quantity": 3,
+    "x": { "min": -2, "max": 2 },
+    "y": { "min": 0, "max": 5 },
+    "tint": [255]
+  }
+}

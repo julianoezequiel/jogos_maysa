@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7fd08a"/>
+      <stop offset="100%" stop-color="#5aa361"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="450" fill="transparent"/>
+  <g transform="translate(0,120)">
+    <ellipse cx="200" cy="180" rx="380" ry="120" fill="url(#g1)"/>
+    <ellipse cx="820" cy="160" rx="420" ry="140" fill="#6fc07b"/>
+  </g>
+  <!-- árvores simples -->
+  <g fill="#2f6b31">
+    <circle cx="120" cy="220" r="28"/>
+    <rect x="112" y="240" width="16" height="40" fill="#6b3e25"/>
+
+    <circle cx="420" cy="200" r="34"/>
+    <rect x="412" y="234" width="16" height="46" fill="#6b3e25"/>
+  </g>
+</svg>

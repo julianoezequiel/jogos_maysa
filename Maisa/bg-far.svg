@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450">
+  <rect width="1200" height="450" fill="#a3d7ff" />
+  <!-- nuvens simples -->
+  <g fill="#ffffff" opacity="0.9">
+    <ellipse cx="150" cy="90" rx="70" ry="28"/>
+    <ellipse cx="240" cy="80" rx="90" ry="30"/>
+    <ellipse cx="420" cy="100" rx="60" ry="22"/>
+    <ellipse cx="980" cy="70" rx="120" ry="38"/>
+  </g>
+</svg>

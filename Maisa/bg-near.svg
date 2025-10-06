@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="450" viewBox="0 0 1200 450">
+  <rect width="1200" height="450" fill="transparent"/>
+  <g transform="translate(0,250)" fill="#4a8b3a">
+    <rect x="0" y="60" width="1200" height="140"/>
+    <!-- pequenas pedras e relva -->
+    <g fill="#3a6f2e" opacity="0.9">
+      <ellipse cx="120" cy="120" rx="18" ry="6"/>
+      <ellipse cx="220" cy="132" rx="12" ry="4"/>
+      <ellipse cx="340" cy="128" rx="20" ry="7"/>
+    </g>
+  </g>
+</svg>

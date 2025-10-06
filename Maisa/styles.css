@@ -1,0 +1,41 @@
+:root{
+  --bg:#b3e5fc;
+  --ground:#6fbf73;
+  --accent:#ffcc66;
+  --text:#1b2b34;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter, system-ui, Arial, sans-serif;color:var(--text)}
+main{max-width:1000px;margin:18px auto;padding:16px}
+h1{font-size:28px;margin:0 0 6px}
+.subtitle{margin:0 0 12px;color:#234}
+.game-wrap{position:relative;background:linear-gradient(180deg,var(--bg),#e6f7ff);border-radius:12px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,0.12)}
+canvas{display:block;background:transparent;border-radius:8px;width:100%;height:auto}
+.ui{position:absolute;left:14px;top:14px;display:flex;gap:12px;align-items:center}
+.score{background:rgba(255,255,255,0.9);padding:8px 12px;border-radius:8px;font-weight:700}
+.controls{display:flex;gap:6px}
+.controls button{background:var(--accent);border:0;padding:8px 10px;border-radius:8px;cursor:pointer;font-weight:700}
+.controls button:hover{filter:brightness(0.95)}
+.audio-controls{position:absolute;right:14px;top:14px;display:flex;gap:8px}
+.audio-controls button{background:rgba(255,255,255,0.95);border-radius:8px;padding:6px 8px;border:0;cursor:pointer;font-weight:700}
+.explain{margin-top:12px;background:#fff;padding:12px;border-radius:8px}
+footer{margin-top:8px;color:#3a5560}
+
+/* small responsive */
+@media (max-width:640px){
+  h1{font-size:22px}
+}
+
+/* friendly instructional overlay for kids */
+.hint{position:absolute;right:14px;top:14px;background:rgba(255,255,255,0.9);padding:8px;border-radius:8px}
+
+/* Simple visual for obstacles and ground when drawn over canvas fallback */
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);border:0}
+
+/* modal */
+.modal{position:absolute;left:0;top:0;width:100%;height:100%;display:none;align-items:center;justify-content:center}
+.modal[aria-hidden="false"]{display:flex}
+.modal-content{background:linear-gradient(#ffffff,#f7fff6);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.18);min-width:260px;text-align:center}
+.modal-actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.modal-actions button{background:var(--accent);border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+
