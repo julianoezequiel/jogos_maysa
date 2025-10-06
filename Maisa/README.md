@@ -1,3 +1,14 @@
+# Maisa
+
+Projeto simples com ilustrações (SVG) e página estática.
+
+Arquivos principais
+- `index.html` — entrada do projeto
+- `script.js`, `styles.css`
+- ilustrações em SVG (bg-far, bg-mid, bg-near, capivara-run.svg)
+
+Como ver
+- Sirva a pasta com um servidor HTTP e abra `index.html` no navegador.
 # Capivara Aventura — Maisa
 
 Jogo simples em HTML/CSS/JS projetado para uma criança de 10 anos aprender e brincar.
