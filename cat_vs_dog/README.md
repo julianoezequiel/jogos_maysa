@@ -17,9 +17,34 @@ Estrutura
 - `scripts/` — scripts do jogo (inclui `sketch.js`)
 - `sim_runner_node.js` — utilitário para rodar simulações sem UI
 
-Como rodar
-1. Sirva a pasta com um servidor HTTP (ex.: `python -m http.server`) e abra `index.html` no navegador.
-2. Para rodar simulações headless, use `node sim_runner_node.js` (veja comentários no arquivo para opções).
+# cat_vs_dog
 
-Notas
-- Arquivos redundantes foram movidos para `assets/unused/` e a `preload()` foi atualizada para preferir `*-new.png`.
+Pequeno jogo p5.js com animais controlados por IA/simulação. Este diretório foi publicado como repositório separado e também mantido dentro do monorepo.
+
+Como abrir
+---------
+
+- Abra `cat_vs_dog/index.html` em um navegador moderno.
+- Para servir localmente (recomendado):
+
+	- Python 3: `python -m http.server 8000`
+	- Node: `npx serve .`
+
+Arquivos principais
+-------------------
+
+- `index.html` — entrada do jogo
+- `scripts/sketch.js` — sketch p5.js (carrega imagens preferindo `*-new.png` quando presentes)
+- `assets/` — imagens e áudio (arquivos redundantes foram movidos para `assets/unused/`)
+- `sim_runner_node.js` — runner de simulação headless (Node)
+
+Rodando simulações headless
+---------------------------
+
+Se quiser rodar séries de simulações sem UI, use `node sim_runner_node.js` a partir do diretório `cat_vs_dog` e consulte os comentários no arquivo para opções de execução.
+
+Observações
+-----------
+
+- Ao publicar, o histórico do subprojeto foi preservado.
+- Backups locais foram deixados em `*_git_backup` e `cat_vs_dog_local_backup/` — revise antes de apagar.

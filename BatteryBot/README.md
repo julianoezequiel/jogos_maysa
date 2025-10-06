@@ -1,3 +1,28 @@
+BatteryBot
+=========
+
+Pequeno jogo feito com Phaser que controla um robô coletor de baterias.
+
+Como abrir
+---------
+
+- Abra `BatteryBot/index.html` em um navegador moderno (Chrome/Edge/Firefox).
+- Se preferir rodar localmente com servidor (recomendado), use um servidor simples:
+
+  - Python 3: `python -m http.server 8000` (no diretório raiz do projeto)
+  - Node: `npx serve .`
+
+Arquivos principais
+-------------------
+
+- `index.html` — entrada do jogo
+- `assets/` — imagens e áudio
+- `js/game.js` — lógica do jogo
+
+Observações
+-----------
+
+- Este README foi criado automaticamente ao publicar o subprojeto como repositório separado.
 # BatteryBot
 
 Pequeno jogo HTML/JS embutido neste monorepo.
